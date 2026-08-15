@@ -23,6 +23,7 @@ const CLAIMS = [
   {
     when: 'c. 1500 BC',
     field: 'Writing',
+    plate: 'M9',
     title: 'The alphabet',
     body: 'Twenty-two consonant signs, developed on the Phoenician coast and carried out of Byblos by traders. Greek added vowels to it, Latin took it from Greek, and almost every alphabet in use west of India is descended from it. Including the one you are reading.',
     evidence: 'Ahiram sarcophagus, Byblos · earliest long alphabetic inscription',
@@ -38,6 +39,7 @@ const CLAIMS = [
   },
   {
     when: 'c. 814 BC',
+    plate: 'J6',
     field: 'Cities',
     title: 'Carthage, founded from Tyre',
     body: 'Settlers from Tyre founded Carthage on the North African coast. It grew into the power that fought Rome for the western Mediterranean across three wars. An argument begun by a colony of a Lebanese port city.',
@@ -46,6 +48,7 @@ const CLAIMS = [
   },
   {
     when: 'c. 600 BC',
+    plate: 'E1',
     field: 'Navigation',
     title: 'Around Africa, possibly',
     body: 'Herodotus reports that Phoenician crews sailed from the Red Sea, around Africa, and back through the Pillars of Hercules in three years. He disbelieved the detail that decided it for modern readers, that the sun stood on their right hand, which is exactly what would happen south of the equator.',
@@ -62,6 +65,7 @@ const CLAIMS = [
   },
   {
     when: 'c. 200 AD',
+    plate: 'J7',
     field: 'Law',
     title: 'The first school of law',
     body: 'Beirut held the most important school of Roman law in the empire, and its jurists wrote a substantial part of what became the Justinian Code, the foundation of most continental European legal systems. An earthquake took the city and the school in 551.',
@@ -78,6 +82,7 @@ const CLAIMS = [
   },
   {
     when: '1923',
+    plate: 'S1',
     field: 'Letters',
     title: 'The Prophet',
     body: 'Khalil Gibran, from Bsharri above the Qadisha valley, wrote a slim book of prose poetry in English that has never gone out of print in a century and has sold in the tens of millions. It is among the best-selling books ever written.',
@@ -86,6 +91,7 @@ const CLAIMS = [
   },
   {
     when: '1948',
+    plate: 'S2',
     field: 'Rights',
     title: 'The Universal Declaration',
     body: 'Charles Malik, a philosopher from Btourram, was one of the principal drafters of the Universal Declaration of Human Rights and chaired the commission that carried it. He argued successfully that the document had to apply to individuals rather than to states.',
@@ -178,7 +184,23 @@ export default function AchievementsPage() {
                 {isOpen ? (
                   <div className="grid gap-6 pb-9 md:grid-cols-[8rem_1fr] md:gap-6">
                     <div className="hidden md:block" />
-                    <div>
+                    <div className="grid gap-6 md:grid-cols-12 md:gap-8">
+                      {/* Only where a photograph genuinely shows the claim.
+                          Six of the nine have one; the rest carry their weight
+                          typographically rather than borrowing an image that
+                          is about something else. */}
+                      {c.plate ? (
+                        <div className="md:col-span-4">
+                          <PhotoField
+                            brief={`${c.title}. ${c.evidence}`}
+                            showSlots={false}
+                            plate={c.plate}
+                            className="aspect-[4/3] w-full md:aspect-[3/4]"
+                            variant="mid"
+                          />
+                        </div>
+                      ) : null}
+                      <div className={c.plate ? 'md:col-span-8' : 'md:col-span-12'}>
                       <p className="max-w-[62ch] text-[0.95rem] leading-[1.85] text-ink-dim">
                         {c.body}
                       </p>
@@ -194,6 +216,7 @@ export default function AchievementsPage() {
                           {c.certainty === 'contested' ? tr('ach.contested') : tr('ach.established')}
                         </span>
                         <span className="micro max-w-[52ch] text-ink-dim">{c.evidence}</span>
+                      </div>
                       </div>
                     </div>
                   </div>

@@ -1,4 +1,4 @@
-﻿export type Locale = 'en' | 'fr' | 'ar';
+export type Locale = 'en' | 'fr' | 'ar';
 
 export const LOCALES: { code: Locale; label: string; native: string; dir: 'ltr' | 'rtl' }[] = [
   { code: 'en', label: 'EN', native: 'English', dir: 'ltr' },
@@ -269,6 +269,7 @@ export const t: Record<Locale, Dict> = {
     'people.lede':
       'Eight of them, by what they made rather than by how famous they are. Select a name to see the work.',
     'people.work': 'The work',
+    'people.pending': 'Image slot. Waiting on a plate, or on a licensed photograph.',
     'people.portraitNote':
       'These are real people, so this page shows their work rather than generated portraits of their faces. An invented likeness captioned with a real name is indistinguishable from a photograph to anyone reading it. Each entry keeps a slot ready for a properly licensed portrait if you want to source them.',
   },
@@ -528,6 +529,7 @@ export const t: Record<Locale, Dict> = {
     'people.lede':
       'Huit personnalités, classées par ce qu’elles ont créé plutôt que par leur notoriété. Choisissez un nom pour voir l’œuvre.',
     'people.work': 'L’œuvre',
+    'people.pending': 'Emplacement d’image. En attente d’une planche ou d’une photographie sous licence.',
     'people.portraitNote':
       'Ce sont des personnes réelles : cette page montre donc leur œuvre plutôt que des portraits générés de leur visage. Une ressemblance inventée sous un vrai nom est indiscernable d’une photographie pour qui la regarde. Chaque entrée garde un emplacement prêt pour un portrait sous licence.',
   },
@@ -787,6 +789,7 @@ export const t: Record<Locale, Dict> = {
     'people.lede':
       'ثمانية منهم، بحسب ما صنعوه لا بحسب شهرتهم. اختر اسماً لترى العمل.',
     'people.work': 'العمل',
+    'people.pending': 'مكان مخصّص لصورة. في انتظار لوحة أو صورة مرخّصة.',
     'people.portraitNote':
       'هؤلاء أشخاص حقيقيّون، ولذلك تعرض هذه الصفحة أعمالهم لا صوراً مولّدة لوجوههم. فالشبه المُختلق تحت اسم حقيقي لا يمكن تمييزه عن صورة فوتوغرافية لمن يراه. وكلّ مدخل يحتفظ بمكان جاهز لصورة مرخّصة إن أردت.',
   },

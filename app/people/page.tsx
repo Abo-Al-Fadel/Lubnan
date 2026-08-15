@@ -33,6 +33,12 @@ type Person = {
   work: string;
   plate: string;
   brief: string;
+  /**
+   * Shown under the plate. Public domain files do not legally require it, but
+   * CC BY-SA does, and a credit line in a repository file is not a credit line
+   * a reader ever sees. Where this is absent the slot is still waiting for art.
+   */
+  credit?: string;
 };
 
 const PEOPLE: Person[] = [
@@ -47,6 +53,7 @@ const PEOPLE: Person[] = [
     body: 'Left the Qadisha valley for Boston at twelve, and wrote The Prophet in English in 1923. It has never gone out of print, has been translated into more than a hundred languages, and has sold in the tens of millions. He also painted. Several hundred works, mostly ignored next to the book.',
     work: 'The Prophet, 1923',
     plate: 'S1',
+    credit: 'Kahlil Gibran, Self Portrait. Public domain, via Wikimedia Commons.',
     brief: 'An open hardback book of prose poetry on a warm wooden table, golden afternoon light across the pages, ink illustration visible',
   },
   {
@@ -60,6 +67,7 @@ const PEOPLE: Person[] = [
     body: 'A philosopher who studied under Heidegger and Whitehead, then chaired the UN commission that produced the 1948 Declaration. He argued, successfully, that the document had to protect individuals rather than states, which is the reason it reads the way it does.',
     work: 'Universal Declaration of Human Rights, 1948',
     plate: 'S2',
+    credit: 'The Universal Declaration of Human Rights, 10 December 1948. Public domain, via Wikimedia Commons.',
     brief: 'A typed 1940s document on a desk beside a fountain pen, warm lamplight, aged paper, shallow depth of field',
   },
   {
@@ -73,6 +81,7 @@ const PEOPLE: Person[] = [
     body: 'Nouhad Haddad has recorded for seven decades and is played across the Arab world every morning by unspoken convention. She kept performing through the civil war and refused to take a side in it, which is part of why she is one of the few things Lebanese of every position still agree on.',
     work: 'Baalbek International Festival, from 1957',
     plate: 'S3',
+    credit: 'Baalbek, where the festival is held. CC BY-SA 3.0, via Wikimedia Commons.',
     brief: 'A vinyl record sleeve and turntable in warm evening light, rich colour, shallow depth of field, no faces',
   },
   {
@@ -99,6 +108,7 @@ const PEOPLE: Person[] = [
     body: 'Left Beirut as a journalist when the war started and writes in French. Took seat 29 at the Académie française in 2011, previously held by Claude Lévi-Strauss, and became its Perpetual Secretary in 2023.',
     work: 'Léon l’Africain, 1986 · Le Rocher de Tanios, 1993',
     plate: 'S5',
+    credit: 'A reception under the coupole of the Academie francaise. Public domain, via Wikimedia Commons.',
     brief: 'A stack of French-language novels on a writing desk beside a window, warm morning light, worn spines',
   },
   {
@@ -112,6 +122,7 @@ const PEOPLE: Person[] = [
     body: 'Worked at General Electric in Schenectady and patented widely across power conversion and solar energy, decades before either mattered commercially. He died in a car accident at forty and his notebooks were brought home to Nabatieh.',
     work: '76 US patents, 1927 – 1935',
     plate: 'S6',
+    credit: 'Al-Sabbah in Al-Alam, vol. 2. Public domain, via Wikimedia Commons.',
     brief: 'A 1930s engineering drafting table with technical drawings, brass instruments, warm lamplight, rich detail',
   },
   {
@@ -138,6 +149,7 @@ const PEOPLE: Person[] = [
     body: 'Born in Beirut and evacuated as an infant when the war reached the family. Trained at the Royal College of Music, and his 2007 debut went to number one across most of Europe. He organised the televised aid concert for Beirut after the 2020 port explosion.',
     work: 'Life in Cartoon Motion, 2007',
     plate: 'S8',
+    credit: 'Concert grand, Kurhaus Wiesbaden. CC0, via Wikimedia Commons.',
     brief: 'A grand piano in warm stage light with colourful lighting rig behind, vivid saturated colour, no people',
   },
 ];
@@ -239,6 +251,11 @@ export default function PeoplePage() {
                 className="aspect-[4/5] w-full"
                 variant="mid"
               />
+              {person.credit ? (
+                <p className="micro mt-3 leading-[1.7] text-ink-dim">{person.credit}</p>
+              ) : (
+                <p className="micro mt-3 leading-[1.7] text-ink-dim">{tr('people.pending')}</p>
+              )}
               <div className="mt-6 border-t border-ink-ghost pt-6">
                 <p className="micro text-ink-dim">{tr('people.work')}</p>
                 <p className="mt-3 font-display text-lg uppercase tracking-wide text-ink">
