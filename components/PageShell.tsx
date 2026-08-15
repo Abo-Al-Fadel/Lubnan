@@ -60,7 +60,12 @@ export function PageBanner({
         variant="high"
       />
 
-      <div className="scrim relative flex min-h-[62svh] flex-col justify-end px-5 pb-12 pt-32 text-hero-ink md:px-10 md:pb-16 md:pt-40">
+      {/* scrim-deep, because a banner carries a standfirst and not just a
+          title. On Gentle this bleaches the plate toward the page ground
+          rather than darkening it — that palette's hero ink is dark — and the
+          plain scrim left /plan's standfirst at 3.92:1 once a real photograph
+          replaced the placeholder. */}
+      <div className="scrim scrim-deep relative flex min-h-[62svh] flex-col justify-end px-5 pb-12 pt-32 text-hero-ink md:px-10 md:pb-16 md:pt-40">
         <p className="micro anim-lift text-hero-ink-dim">{eyebrow}</p>
         <h1 className="anim-word mt-4 max-w-[16ch] font-display text-[clamp(2.5rem,8.5vw,6.5rem)] font-bold uppercase leading-[0.86] tracking-[-0.01em] text-hero-ink">
           {title}
