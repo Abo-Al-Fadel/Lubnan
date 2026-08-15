@@ -115,9 +115,13 @@ export default function ExplorePage() {
             </div>
           </div>
 
-          <div id="nav-sentinel" aria-hidden="true" className="h-px w-full" />
-
           <div className="seam h-24 w-full md:h-36">
+            {/* See Hero: in flow this was a 1px band of un-scrimmed plate. */}
+            <div
+              id="nav-sentinel"
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 top-0 h-px"
+            />
             <div aria-hidden="true" className="seam-blur seam-blur-1" />
             <div aria-hidden="true" className="seam-blur seam-blur-2" />
             <div aria-hidden="true" className="seam-blur seam-blur-3" />
@@ -217,7 +221,7 @@ export default function ExplorePage() {
                 className={`group relative block aspect-[4/3] md:aspect-auto ${spans[i % spans.length]}`}
               >
                 <PhotoField
-                  brief={`${p.name}, ${p.region} — establishing shot, warm natural light`}
+                  brief={`${p.name}, ${p.region}. Establishing shot, warm natural light`}
                   showSlots={false}
                   plate={p.plateMosaic ?? p.plateRail}
                   className="absolute inset-0 h-full w-full [&>img]:transition-transform [&>img]:duration-[900ms] [&>img]:ease-out group-hover:[&>img]:scale-[1.06]"

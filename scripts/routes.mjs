@@ -88,17 +88,44 @@ for (const [label, viewport] of [
       const color = await el.evaluate((n) => getComputedStyle(n).color);
       if (!box || box.width < 4 || box.height < 4) continue;
 
-      const clip = {
-        x: Math.max(0, box.x),
-        y: Math.max(0, box.y),
-        width: Math.min(box.width, viewport.width - Math.max(0, box.x)),
-        height: Math.min(box.height, viewport.height - Math.max(0, box.y)),
-      };
+      /* Sample the ground *beside* the text, not through it.
+         Sampling the text's own box means the glyphs are in the sample, and
+         once the type is correctly bright the percentile lands on the type
+         itself and reports ~1:1 against its own colour. Which is what happened:
+         this check passed while the Achievements headline was buried under its
+         own gradient, and failed the moment it became legible. A strip at the
+         same vertical band sits under the same gradient stop and contains no
+         glyphs. */
+      const PROBE = 90;
+      const GAP = 12;
+      const rightX = box.x + box.width + GAP;
+      const leftX = box.x - GAP - PROBE;
+      let px;
+      if (rightX + PROBE <= viewport.width) px = rightX;
+      else if (leftX >= 0) px = leftX;
+      else px = null;
+
+      const clip = px === null
+        ? {
+            x: Math.max(0, box.x),
+            y: Math.max(0, box.y),
+            width: Math.min(box.width, viewport.width - Math.max(0, box.x)),
+            height: Math.min(box.height, viewport.height - Math.max(0, box.y)),
+          }
+        : {
+            x: px,
+            y: Math.max(0, box.y),
+            width: PROBE,
+            height: Math.min(box.height, viewport.height - Math.max(0, box.y)),
+          };
       if (clip.width < 4 || clip.height < 4) continue;
+      // With a glyph-free sample, the worst case is simply the brightest ground.
+      const usePct = px === null ? pct : 0.9;
 
       const shot = await page.screenshot({ clip });
+      const inkRgb = (color.match(/\d+(\.\d+)?/g) || []).slice(0, 3).map(Number);
       const bg = await page.evaluate(
-        async ({ u, pct }) => {
+        async ({ u, pct, ink }) => {
           const img = new Image();
           img.src = u;
           await img.decode();
@@ -108,12 +135,24 @@ for (const [label, viewport] of [
           const cx = c.getContext('2d');
           cx.drawImage(img, 0, 0);
           const d = cx.getImageData(0, 0, c.width, c.height).data;
-          const px = [];
-          for (let i = 0; i < d.length; i += 4) px.push([d[i], d[i + 1], d[i + 2]]);
+
+          /* Drop anything close to the type's own colour. Those pixels are
+             glyphs or their antialiasing, and including them lets a correctly
+             legible block report ~1:1 against itself. */
+          const near = (p) =>
+            Math.abs(p[0] - ink[0]) < 46 &&
+            Math.abs(p[1] - ink[1]) < 46 &&
+            Math.abs(p[2] - ink[2]) < 46;
+
+          const all = [];
+          for (let i = 0; i < d.length; i += 4) all.push([d[i], d[i + 1], d[i + 2]]);
+          let px = all.filter((p) => !near(p));
+          // If the box is almost entirely glyph, there is nothing to measure.
+          if (px.length < all.length * 0.15) px = all;
           px.sort((a, b) => a[0] + a[1] + a[2] - (b[0] + b[1] + b[2]));
           return px[Math.floor(px.length * pct)];
         },
-        { u: `data:image/png;base64,${shot.toString('base64')}`, pct },
+        { u: `data:image/png;base64,${shot.toString('base64')}`, pct: usePct, ink: inkRgb },
       );
 
       const lum = ([r, g, b]) => {

@@ -253,6 +253,7 @@
      above it, so the plain scrim silently won and the deep one did nothing.
      The doubled selector wins on specificity regardless of where it lives. */
   .scrim.scrim-deep::before {
+    z-index: -1;
     content: '';
     position: absolute;
     inset: 0;
@@ -271,6 +272,7 @@
      Explore puts the copy left and the drawn map right, so a bottom-up ramp
      lands in the wrong place. */
   .scrim.scrim-left::before {
+    z-index: -1;
     content: '';
     position: absolute;
     inset: 0;
@@ -285,21 +287,42 @@
     );
   }
 
+  /* `isolation: isolate` makes this a stacking context so the gradient below
+     can sit at z-index -1 *inside* it.
+
+     Without that pair, the gradient is an absolutely positioned pseudo-element
+     and therefore paints in stacking step 8, above any child that is not
+     itself positioned. Most callers happened to give their text `relative z-30`
+     and so never saw it; the Achievements closing block did not, and its
+     headline was painted over by its own scrim. Fixing it here rather than by
+     adding `relative` to every caller means the next block cannot reintroduce
+     it. */
+  .scrim {
+    position: relative;
+    isolation: isolate;
+  }
+
   /* Any type sitting on a photograph gets this. It models the dark end of
      the frame rather than dimming the whole image, and it is the fix for
      the 2.54:1 headline in the previous round. */
   .scrim::before {
+    z-index: -1;
     content: '';
     position: absolute;
     inset: 0;
     pointer-events: none;
     background:
-      /* Foot: carries the wordmark and the stat bar. */
+      /* Foot: carries the wordmark and the stat bar, and ends on
+         --scrim-strong so the seam below can pick the value up exactly. When
+         this ended on the weaker --scrim, the seam started darker than the
+         block above it and drew a visible line between them. */
       linear-gradient(
           to top,
-          var(--scrim) 0%,
-          color-mix(in srgb, var(--scrim) 55%, transparent) 34%,
-          transparent 68%
+          var(--scrim-strong) 0%,
+          color-mix(in srgb, var(--scrim-strong) 82%, transparent) 16%,
+          color-mix(in srgb, var(--scrim-strong) 52%, transparent) 38%,
+          color-mix(in srgb, var(--scrim-strong) 24%, transparent) 56%,
+          transparent 76%
         ),
       /* Head: carries the nav and the standfirst. Lighter, and it only has to
          survive a bright overcast sky, which is exactly where the real plates
@@ -473,15 +496,33 @@ html {
    against moving or busy imagery. Written here rather than as Tailwind
    utilities because `hover:bg-[var(--accent)]` and friends are exactly the
    var()-with-modifier pattern that silently compiles to nothing. */
+/* The page's one primary button.
+ *
+ * Eggshell fill, near-black label. I briefly made this the accent instead,
+ * reasoning that a saturated fill separates from both ends of a photograph —
+ * but the block it sits in now carries scrim-deep, so the ground behind it is
+ * reliably dark, and a dark teal pill on it vanished. The fill only has to
+ * beat the scrim, not the raw plate, and against the scrim eggshell wins by a
+ * distance.
+ *
+ * The ring is not decoration: it is what stops the pill dissolving where a
+ * plate happens to be pale behind the gradient.
+ */
 .btn-solid {
   background: var(--btn-solid);
   color: var(--btn-solid-ink);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--btn-solid-ink) 18%, transparent),
+    0 10px 30px -10px rgba(0, 0, 0, 0.7);
 }
 
 .btn-solid:hover,
 .btn-solid:focus-visible {
   background: var(--accent);
   color: var(--accent-ink);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 55%, black),
+    0 14px 34px -10px rgba(0, 0, 0, 0.8);
 }
 
 /* ── Drawn map ─────────────────────────────────────────────────────────────
@@ -585,23 +626,43 @@ html {
   mask-image: linear-gradient(to bottom, transparent 58%, #000 92%);
 }
 
+/**
+ * Two stacked ramps, and the second one is the fix for the hard black line.
+ *
+ * The block above the seam ends on a fully opaque scrim. This strip used to
+ * start from *transparent*, so the raw plate reappeared at full brightness on
+ * the seam's first pixel row — a dark band with a knife edge along its top,
+ * exactly where the design was trying to have no edge at all.
+ *
+ * So: the lower layer carries the scrim down and releases it, matching the
+ * value the block above ends on; the upper layer brings the page ground in.
+ * Neither has a stop the eye can find.
+ */
 .seam-bleed {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--ground) 0%, transparent) 0%,
-    color-mix(in srgb, var(--ground) 3%, transparent) 12%,
-    color-mix(in srgb, var(--ground) 10%, transparent) 24%,
-    color-mix(in srgb, var(--ground) 22%, transparent) 36%,
-    color-mix(in srgb, var(--ground) 40%, transparent) 48%,
-    color-mix(in srgb, var(--ground) 60%, transparent) 60%,
-    color-mix(in srgb, var(--ground) 78%, transparent) 72%,
-    color-mix(in srgb, var(--ground) 91%, transparent) 82%,
-    color-mix(in srgb, var(--ground) 98%, transparent) 92%,
-    var(--ground) 100%
-  );
+  background:
+    linear-gradient(
+      to bottom,
+      transparent 0%,
+      color-mix(in srgb, var(--ground) 6%, transparent) 20%,
+      color-mix(in srgb, var(--ground) 20%, transparent) 36%,
+      color-mix(in srgb, var(--ground) 42%, transparent) 52%,
+      color-mix(in srgb, var(--ground) 66%, transparent) 66%,
+      color-mix(in srgb, var(--ground) 85%, transparent) 80%,
+      color-mix(in srgb, var(--ground) 96%, transparent) 91%,
+      var(--ground) 100%
+    ),
+    linear-gradient(
+      to bottom,
+      var(--scrim-strong) 0%,
+      color-mix(in srgb, var(--scrim-strong) 88%, transparent) 18%,
+      color-mix(in srgb, var(--scrim-strong) 62%, transparent) 36%,
+      color-mix(in srgb, var(--scrim-strong) 34%, transparent) 54%,
+      color-mix(in srgb, var(--scrim-strong) 14%, transparent) 72%,
+      transparent 88%
+    );
 }
 
 /* The wordmark wipes up from its own baseline, so it reads as being revealed

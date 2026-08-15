@@ -31,7 +31,7 @@ const STEPS = [
     title: 'Visa',
     plate: 'P1',
     brief: 'Beirut airport arrivals hall in warm morning light, bright and welcoming, travellers with luggage',
-    body: 'Most Western passports get a free single-entry visa on arrival, valid one month, issued at the desk before immigration. Bring a printed onward ticket and an address. An Israeli stamp — or any evidence of an Israeli visit — will refuse you entry, and that rule is enforced.',
+    body: 'Most Western passports get a free single-entry visa on arrival, valid one month, issued at the desk before immigration. Bring a printed onward ticket and an address. An Israeli stamp, or any evidence of an Israeli visit. Will refuse you entry, and that rule is enforced.',
   },
   {
     id: 'flights',
@@ -45,14 +45,14 @@ const STEPS = [
     title: 'Airport transfer',
     plate: 'P3',
     brief: 'Coastal road into Beirut at golden hour, warm light, sea on one side and city on the other',
-    body: 'The airport is 9 km from downtown, which is fifteen minutes at 3 am and an hour at 6 pm. Agree the fare before you get in — there is no meter culture. Ride-hailing works and is usually cheaper.',
+    body: 'The airport is 9 km from downtown, which is fifteen minutes at 3 am and an hour at 6 pm. Agree the fare before you get in. There is no meter culture. Ride-hailing works and is usually cheaper.',
   },
   {
     id: 'money',
     title: 'Money',
     plate: 'P4',
     brief: 'Beirut street market in warm afternoon light, colourful produce, lively and bright',
-    body: 'Bring US dollars in cash, in good condition. The economy runs on them and card acceptance is patchy outside Beirut. Prices are frequently quoted in dollars even when paid in lira, and the rate moves — ask before you commit.',
+    body: 'Bring US dollars in cash, in good condition. The economy runs on them and card acceptance is patchy outside Beirut. Prices are frequently quoted in dollars even when paid in lira, and the rate moves. Ask before you commit.',
   },
   {
     id: 'around',
@@ -66,7 +66,7 @@ const STEPS = [
     title: 'Before you go',
     plate: 'P6',
     brief: 'Lebanese mezze table in warm daylight, colourful dishes, fresh and inviting',
-    body: 'Type A, B, C and G sockets at 220 V — bring an adapter and expect scheduled power cuts. Arabic is the language; French and English are widely spoken in Beirut. Modest dress for religious sites. Tap water is not for drinking.',
+    body: 'Type A, B, C and G sockets at 220 V. Bring an adapter and expect scheduled power cuts. Arabic is the language; French and English are widely spoken in Beirut. Modest dress for religious sites. Tap water is not for drinking.',
   },
 ];
 
@@ -248,7 +248,7 @@ export default function PlanPage() {
                 className={`group relative text-left transition-opacity ${full ? 'cursor-not-allowed opacity-35' : ''}`}
               >
                 <PhotoField
-                  brief={`${p.name} — establishing shot, warm natural light`}
+                  brief={`${p.name}. Establishing shot, warm natural light`}
                   showSlots={false}
                   plate={p.plateMosaic ?? p.plateRail}
                   className="aspect-[3/2] w-full"

@@ -100,7 +100,7 @@ export default function ProfilePage() {
                   <article key={p.id} className="group relative">
                     <a href={`/explore/${p.id}`} className="block">
                       <PhotoField
-                        brief={`${p.name} — establishing shot, warm natural light`}
+                        brief={`${p.name}. Establishing shot, warm natural light`}
                         showSlots={false}
                         plate={p.plateMosaic ?? p.plateRail}
                         className="aspect-[4/5] w-full [&>img]:transition-transform [&>img]:duration-[900ms] [&>img]:ease-out group-hover:[&>img]:scale-[1.05]"

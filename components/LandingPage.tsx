@@ -7,6 +7,7 @@ import {
   DestinationMosaic,
   DestinationRail,
   Lede,
+  Nicknames,
   NumbersBar,
   SecretsList,
 } from '@/components/sections/Blocks';
@@ -32,7 +33,7 @@ const content: Record<PaletteKey, Content> = {
     heroBrief:
       'Cedar grove above Bsharri under flat overcast light, mid shot, cold desaturated slate and grey-green, snow patches between the trunks, winter',
     standfirst:
-      'Two ranges run the length of the country and hold their snow into spring — which is how somewhere this small keeps a coastline and a treeline within an hour of each other.',
+      'Two ranges run the length of the country and hold their snow into spring, which is how somewhere this small keeps a coastline and a treeline within an hour of each other.',
     stats: [
       { figure: '1,000+', label: 'years on the oldest trunks' },
       { figure: '2,000m', label: 'altitude of the grove' },
@@ -88,6 +89,7 @@ export function LandingPage({
     lede: <Lede statement={c.ledeStatement} notes={c.ledeNotes} showSlots={showSlots} />,
     rail: <DestinationRail showSlots={showSlots} />,
     mosaic: <DestinationMosaic showSlots={showSlots} />,
+    names: <Nicknames />,
     numbers: <NumbersBar />,
     secrets: <SecretsList showSlots={showSlots} />,
     community: <CommunityStrip showSlots={showSlots} />,

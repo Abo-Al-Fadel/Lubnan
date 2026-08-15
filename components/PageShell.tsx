@@ -79,12 +79,21 @@ export function PageBanner({
           </p>
         ) : null}
         {children}
-      </div>
 
-      {/* Sentinel: the navbar swaps to page ink when this scrolls out, so the
-          swap tracks the actual banner height instead of assuming every page
-          opens on a full viewport. */}
-      <div id="nav-sentinel" aria-hidden="true" className="h-px w-full" />
+        {/* Sentinel: the navbar swaps to page ink when this scrolls out, so
+            the swap tracks the actual banner height instead of assuming every
+            page opens on a full viewport.
+
+            Absolutely positioned *inside* the scrim, not a sibling below it.
+            As a 1px block in normal flow it inserted a one-pixel band of
+            un-scrimmed plate between the scrim and the seam, which rendered as
+            a hard line straight across the page. */}
+        <div
+          id="nav-sentinel"
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-px"
+        />
+      </div>
 
       <div className="seam h-24 w-full md:h-36">
         <div aria-hidden="true" className="seam-blur seam-blur-1" />

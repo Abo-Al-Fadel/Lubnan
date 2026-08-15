@@ -26,12 +26,16 @@ const SITES: {
   coords: string;
   kind: DiagramKind;
   plate: string;
+  fig: string;
+  scale: string;
   claim: string;
   body: string;
   measures: [string, string][];
 }[] = [
   {
     id: 'baalbek',
+    fig: '01',
+    scale: '1 : 400',
     plate: 'N1',
     name: 'Baalbek',
     arabic: 'بعلبك',
@@ -41,7 +45,7 @@ const SITES: {
     coords: '34.007 N · 36.204 E',
     kind: 'trilithon',
     claim: 'Three stones nobody can explain moving',
-    body: 'The western podium wall contains three limestone blocks of roughly eight hundred tonnes each. A fourth, larger still, lies half-cut in the quarry eight hundred metres south — abandoned at what was evidently the limit of the method.',
+    body: 'The western podium wall contains three limestone blocks of roughly eight hundred tonnes each. A fourth, larger still, lies half-cut in the quarry eight hundred metres south, abandoned at what was evidently the limit of the method.',
     measures: [
       ['Standing columns', '6 of 54'],
       ['Column height', '22 m'],
@@ -51,6 +55,8 @@ const SITES: {
   },
   {
     id: 'anjar',
+    fig: '02',
+    scale: '1 : 4,000',
     plate: 'N2',
     name: 'Anjar',
     arabic: 'عنجر',
@@ -70,6 +76,8 @@ const SITES: {
   },
   {
     id: 'byblos',
+    fig: '03',
+    scale: 'section, not to scale',
     plate: 'N3',
     name: 'Byblos',
     arabic: 'جبيل',
@@ -89,6 +97,8 @@ const SITES: {
   },
   {
     id: 'tyre',
+    fig: '04',
+    scale: '1 : 20,000',
     plate: 'N4',
     name: 'Tyre',
     arabic: 'صور',
@@ -98,7 +108,7 @@ const SITES: {
     coords: '33.271 N · 35.196 E',
     kind: 'causeway',
     claim: 'An island that stopped being one',
-    body: 'Alexander built a mole to take the island in 332 BC. The mole silted up and never stopped, permanently joining the city to the mainland — a siege work that became geography.',
+    body: 'Alexander built a mole to take the island in 332 BC. The mole silted up and never stopped, permanently joining the city to the mainland. A siege work that became geography.',
     measures: [
       ['Mole built', '332 BC'],
       ['Hippodrome length', '480 m'],
@@ -108,6 +118,8 @@ const SITES: {
   },
   {
     id: 'qadisha',
+    fig: '05',
+    scale: 'vertical exaggeration 2x',
     plate: 'N5',
     name: 'Qadisha Valley',
     arabic: 'وادي قاديشا',
@@ -127,6 +139,8 @@ const SITES: {
   },
   {
     id: 'cedars',
+    fig: '06',
+    scale: '1800 – 2025',
     plate: 'N6',
     name: 'Horsh Arz el-Rab',
     arabic: 'أرز الربّ',
@@ -260,15 +274,33 @@ export default function LegacyPage() {
                           the diagram is of a real place; keeping it letterboxed
                           stops this page turning back into Story. */}
                       <PhotoField
-                        brief={`${s.name} — whole site legible in one frame, warm golden hour light`}
+                        brief={`${s.name}. Whole site legible in one frame, warm golden hour light`}
                         showSlots={false}
                         plate={s.plate}
                         className="aspect-[21/9] w-full"
                         variant="mid"
                       />
-                      <div className="mt-3 border border-ink-ghost bg-ground p-4 md:p-6">
-                        <SiteDiagram kind={s.kind} />
-                      </div>
+                      {/* Captioned, numbered and credited. Unlabelled, a line
+                          drawing on a pale ground reads as an image that
+                          failed to load, which is exactly how this landed on
+                          first review. A figure number and a caption make it
+                          legible as a drawing rather than a gap. */}
+                      <figure className="mt-3 border border-ink-ghost bg-ground">
+                        <figcaption className="flex items-baseline justify-between gap-4 border-b border-ink-ghost px-4 py-3 md:px-6">
+                          <span className="micro text-ink-dim">
+                            {tr('legacy.fig')} {s.fig} · {tr(`legacy.dia.${s.kind}`)}
+                          </span>
+                          <span className="micro figures shrink-0 text-ink-dim">
+                            {s.scale}
+                          </span>
+                        </figcaption>
+                        <div className="p-4 md:p-6">
+                          <SiteDiagram kind={s.kind} />
+                        </div>
+                        <p className="border-t border-ink-ghost px-4 py-3 text-[0.78rem] leading-relaxed text-ink-dim md:px-6">
+                          {tr(`legacy.cap.${s.kind}`)}
+                        </p>
+                      </figure>
                     </div>
 
                     <div className="md:col-span-5">

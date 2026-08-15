@@ -42,8 +42,8 @@ export const variations: Variation[] = [
     subject: 'cedar',
     heroWord: 'Lubnān',
     blurb:
-      'Chroma pulled out and temperature pushed cold — winter slate rather than moss. The tree on the flag, in the weather it actually grows in.',
-    rhythm: 'hero → secrets → lede → mosaic → numbers → community → close',
+      'Chroma pulled out and temperature pushed cold. Winter slate rather than moss. The tree on the flag, in the weather it actually grows in.',
+    rhythm: 'hero → secrets → lede → mosaic → names → numbers → community → close',
     swatches: ['#414F52', '#8B9A99', '#EFEBDD', '#1C2528'],
   },
   {

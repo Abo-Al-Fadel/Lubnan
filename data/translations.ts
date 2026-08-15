@@ -1,4 +1,4 @@
-export type Locale = 'en' | 'fr' | 'ar';
+﻿export type Locale = 'en' | 'fr' | 'ar';
 
 export const LOCALES: { code: Locale; label: string; native: string; dir: 'ltr' | 'rtl' }[] = [
   { code: 'en', label: 'EN', native: 'English', dir: 'ltr' },
@@ -25,7 +25,7 @@ export const t: Record<Locale, Dict> = {
     'nav.login': 'Log in',
     'nav.menu': 'Menu',
     'nav.close': 'Close',
-    'nav.home': 'Lubnān — home',
+    'nav.home': 'Lubnān. Home',
     'nav.theme': 'Switch theme',
 
     'search.placeholder': 'Byblos, cedars, the alphabet…',
@@ -43,6 +43,23 @@ export const t: Record<Locale, Dict> = {
     'mosaic.all': 'All destinations',
     'secrets.title': 'Things nobody puts on the map',
     'secrets.lede': 'Five of them, in no useful order. The rest are in the Story section, arranged by century.',
+    'secrets.caption': 'The unfinished megalith in the Baalbek quarry. Roughly a thousand tonnes, cut free on three sides and never moved.',
+    'names.title': 'What it gets called',
+    'names.lede':
+      'Four names the country has carried. Two of them belong to a period that ended in 1975, and it would be dishonest to hand them to you in the present tense.',
+    'names.swiss.name': 'The Switzerland of the Middle East',
+    'names.swiss.why':
+      'Coined for the mountains, the ski season, the banking secrecy law of 1956 and a policy of staying out of everyone else’s wars. The civil war ended the comparison in 1975. The mountains and the skiing are still here.',
+    'names.paris.name': 'The Paris of the Middle East',
+    'names.paris.why':
+      'Beirut in the fifties and sixties: French-speaking, hard-drinking, the place the region came to for a weekend. Half the façades that earned it the name are still standing.',
+    'names.pearl.name': 'The Pearl of the Middle East',
+    'names.pearl.why':
+      'The oldest of the four and the one still in use, usually about the coast. Twenty-two of the country’s two hundred and twenty-five coastal kilometres are public beach.',
+    'names.cedar.name': 'The Land of the Cedars',
+    'names.cedar.why':
+      'The only one that is a description rather than a comparison. It is on the flag, in the Bible about seventy times, and down to a few hundred old trunks.',
+
     'numbers.title': 'Lebanon in numbers',
     'numbers.area': 'total area',
     'numbers.peak': 'Qurnat as Sawda, the high point',
@@ -107,7 +124,7 @@ export const t: Record<Locale, Dict> = {
     'story.spine': 'By century',
     'story.langTitle': 'Three languages in one sentence',
     'story.langBody':
-      'A Beirut conversation moves between Arabic, French and English mid-sentence, and nobody stops to translate. It is not code-switching so much as a single language with three vocabularies — which is why this site is built in all three rather than defaulting to English with translations bolted on.',
+      'A Beirut conversation moves between Arabic, French and English mid-sentence, and nobody stops to translate. It is not code-switching so much as a single language with three vocabularies, which is why this site is built in all three rather than defaulting to English with translations bolted on.',
     'story.langAr': 'The language of the country, in a Levantine dialect that is closer to Damascus than to Cairo.',
     'story.langFr': 'A century of Mandate and schooling. Still the language of a lot of signage and most bakeries.',
     'story.langEn': 'The language of business and of anyone under thirty who watches anything online.',
@@ -115,12 +132,32 @@ export const t: Record<Locale, Dict> = {
     'legacy.eyebrow': 'Six on the list',
     'legacy.title': 'What survived being fought over',
     'legacy.lede':
-      'Six UNESCO World Heritage sites in a country the size of a small province — and each one is on the list for a structural reason worth drawing.',
+      'Six UNESCO World Heritage sites in a country the size of a small province, and each one is on the list for a structural reason worth drawing.',
     'legacy.register': 'The register',
     'legacy.colSite': 'Site',
     'legacy.colYear': 'Inscribed',
     'legacy.colWhy': 'Why it is on the list',
     'legacy.drawn': 'Drawn to the same stroke weight, so the six read as one set',
+    'legacy.fig': 'Fig.',
+    'legacy.dia.trilithon': 'Podium blocks at scale',
+    'legacy.dia.grid': 'Street plan',
+    'legacy.dia.strata': 'Occupation section',
+    'legacy.dia.causeway': 'Coastline change',
+    'legacy.dia.profile': 'Valley profile',
+    'legacy.dia.grove': 'Grove extent over time',
+    'legacy.cap.trilithon':
+      'The three podium blocks drawn against a 1.75 m figure at the same scale. The ratio is the argument: nothing about the method that moved them has been satisfactorily explained.',
+    'legacy.cap.grid':
+      'Two colonnaded streets crossing at right angles inside a walled rectangle, with the tetrapylon at the crossing and towers marked along the wall.',
+    'legacy.cap.strata':
+      'Five major occupation layers in section, oldest at the base. Depth is the content: nobody cleared the site between them.',
+    'legacy.cap.causeway':
+      'The island city, the mole Alexander built to reach it in 332 BC, and the silt that turned a siege work into a permanent isthmus.',
+    'legacy.cap.profile':
+      'Rim to river, with the rock-cut hermitages marked at the heights they actually sit. Vertical is exaggerated so the cliff reads.',
+    'legacy.cap.grove':
+      'Relative extent of the grove from 1800 to today. The line is the reason the tree on the flag is a conservation story.',
+
     'legacy.riskEyebrow': 'The part that is not settled',
     'legacy.riskTitle': 'Listed is not the same as safe',
     'legacy.riskInscribed': 'sites inscribed since 1984',
@@ -137,13 +174,13 @@ export const t: Record<Locale, Dict> = {
     'plan.legendRain': 'Rainfall mm',
     'plan.compare': 'Compare transfers',
     'plan.buildTitle': 'Build a rough itinerary',
-    'plan.buildNote': 'Pick places against the days you have. Nothing is saved — this is a sketch pad.',
+    'plan.buildNote': 'Pick places against the days you have. Nothing is saved. This is a sketch pad.',
     'plan.days': 'days',
     'plan.selected': 'selected',
     'plan.sheetEyebrow': 'Airport to city · 9 km',
     'plan.sheetTitle': 'Getting in from BEY',
     'plan.sheetNote':
-      'Agree the fare before you get in — there is no meter culture. Fifteen minutes at 3 am, an hour at 6 pm.',
+      'Agree the fare before you get in. There is no meter culture. Fifteen minutes at 3 am, an hour at 6 pm.',
     'plan.colMode': 'Mode',
     'plan.colCost': 'Cost',
     'plan.colTime': 'Time',
@@ -169,7 +206,7 @@ export const t: Record<Locale, Dict> = {
     'login.password': 'Password',
     'login.submitIn': 'Log in',
     'login.submitUp': 'Create account',
-    'login.demo': 'This is a demo — nothing was submitted.',
+    'login.demo': 'This is a demo. Nothing was submitted.',
     'login.swapToUp': "Don't have an account?",
     'login.swapToIn': 'Already have one?',
     'login.caption':
@@ -202,7 +239,7 @@ export const t: Record<Locale, Dict> = {
 
     'community.composeLabel': 'Write a post',
     'community.composePlaceholder': 'Where have you been?',
-    'community.composeNote': 'Local only — nothing is uploaded',
+    'community.composeNote': 'Local only. Nothing is uploaded',
     'community.post': 'Post',
     'community.likes': 'likes',
     'community.like2': 'Like',
@@ -233,7 +270,7 @@ export const t: Record<Locale, Dict> = {
       'Eight of them, by what they made rather than by how famous they are. Select a name to see the work.',
     'people.work': 'The work',
     'people.portraitNote':
-      'These are real people, so this page shows their work rather than generated portraits of their faces — an invented likeness captioned with a real name is indistinguishable from a photograph to anyone reading it. Each entry keeps a slot ready for a properly licensed portrait if you want to source them.',
+      'These are real people, so this page shows their work rather than generated portraits of their faces. An invented likeness captioned with a real name is indistinguishable from a photograph to anyone reading it. Each entry keeps a slot ready for a properly licensed portrait if you want to source them.',
   },
 
   fr: {
@@ -247,7 +284,7 @@ export const t: Record<Locale, Dict> = {
     'nav.login': 'Connexion',
     'nav.menu': 'Menu',
     'nav.close': 'Fermer',
-    'nav.home': 'Lubnān — accueil',
+    'nav.home': 'Lubnān. Accueil',
     'nav.theme': 'Changer de thème',
 
     'search.placeholder': 'Byblos, cèdres, alphabet…',
@@ -266,6 +303,22 @@ export const t: Record<Locale, Dict> = {
     'secrets.title': 'Ce que les cartes ne disent pas',
     'secrets.lede':
       "Cinq d'entre eux, sans ordre particulier. Le reste se trouve dans la section Histoire, classé par siècle.",
+    'names.title': 'Ce qu’on l’appelle',
+    'names.lede':
+      'Quatre noms que le pays a portés. Deux appartiennent à une époque qui s’est achevée en 1975, et il serait malhonnête de vous les donner au présent.',
+    'names.swiss.name': 'La Suisse du Moyen-Orient',
+    'names.swiss.why':
+      'Inventé pour les montagnes, la saison de ski, la loi sur le secret bancaire de 1956 et une politique consistant à rester hors des guerres des autres. La guerre civile a mis fin à la comparaison en 1975. Les montagnes et le ski, eux, sont toujours là.',
+    'names.paris.name': 'Le Paris du Moyen-Orient',
+    'names.paris.why':
+      'Beyrouth dans les années cinquante et soixante : francophone, noctambule, l’endroit où toute la région venait passer un week-end. La moitié des façades qui lui ont valu ce nom sont encore debout.',
+    'names.pearl.name': 'La Perle du Moyen-Orient',
+    'names.pearl.why':
+      'Le plus ancien des quatre et le seul encore employé, généralement à propos de la côte. Vingt-deux des deux cent vingt-cinq kilomètres de littoral sont des plages publiques.',
+    'names.cedar.name': 'Le Pays des Cèdres',
+    'names.cedar.why':
+      'Le seul qui soit une description et non une comparaison. Il figure sur le drapeau, environ soixante-dix fois dans la Bible, et se réduit à quelques centaines de vieux troncs.',
+
     'numbers.title': 'Le Liban en chiffres',
     'numbers.area': 'superficie totale',
     'numbers.peak': 'Qurnat as-Sawda, le point culminant',
@@ -330,7 +383,7 @@ export const t: Record<Locale, Dict> = {
     'story.spine': 'Par siècle',
     'story.langTitle': 'Trois langues dans une phrase',
     'story.langBody':
-      'Une conversation à Beyrouth passe de l’arabe au français à l’anglais en pleine phrase, sans que personne ne traduise. Ce n’est pas de l’alternance codique mais une seule langue à trois vocabulaires — d’où ce site conçu dans les trois plutôt qu’en anglais avec des traductions ajoutées.',
+      'Une conversation à Beyrouth passe de l’arabe au français à l’anglais en pleine phrase, sans que personne ne traduise. Ce n’est pas de l’alternance codique mais une seule langue à trois vocabulaires. D’où ce site conçu dans les trois plutôt qu’en anglais avec des traductions ajoutées.',
     'story.langAr': 'La langue du pays, dans un dialecte levantin plus proche de Damas que du Caire.',
     'story.langFr': 'Un siècle de Mandat et d’école. Encore la langue de nombreuses enseignes et de la plupart des boulangeries.',
     'story.langEn': 'La langue des affaires, et de tous ceux qui ont moins de trente ans et regardent quoi que ce soit en ligne.',
@@ -338,12 +391,32 @@ export const t: Record<Locale, Dict> = {
     'legacy.eyebrow': 'Six sur la liste',
     'legacy.title': 'Ce qui a survécu aux disputes',
     'legacy.lede':
-      'Six sites du patrimoine mondial dans un pays grand comme une petite province — chacun inscrit pour une raison structurelle qui mérite d’être dessinée.',
+      'Six sites du patrimoine mondial dans un pays grand comme une petite province. Chacun inscrit pour une raison structurelle qui mérite d’être dessinée.',
     'legacy.register': 'Le registre',
     'legacy.colSite': 'Site',
     'legacy.colYear': 'Inscrit',
     'legacy.colWhy': 'Motif de l’inscription',
     'legacy.drawn': 'Dessinés à la même épaisseur de trait, pour que les six forment un ensemble',
+    'legacy.fig': 'Fig.',
+    'legacy.dia.trilithon': 'Blocs du podium à l’échelle',
+    'legacy.dia.grid': 'Plan des rues',
+    'legacy.dia.strata': 'Coupe des occupations',
+    'legacy.dia.causeway': 'Évolution du littoral',
+    'legacy.dia.profile': 'Profil de la vallée',
+    'legacy.dia.grove': 'Étendue de la cédraie dans le temps',
+    'legacy.cap.trilithon':
+      'Les trois blocs du podium dessinés à la même échelle qu’une silhouette d’1,75 m. Le rapport est l’argument : rien de la méthode qui les a déplacés n’a été expliqué de façon satisfaisante.',
+    'legacy.cap.grid':
+      'Deux rues à colonnades se croisant à angle droit dans un rectangle fortifié, avec le tétrapyle au croisement et les tours marquées le long du mur.',
+    'legacy.cap.strata':
+      'Cinq grandes couches d’occupation en coupe, la plus ancienne à la base. La profondeur est le contenu : personne n’a rasé le site entre elles.',
+    'legacy.cap.causeway':
+      'La cité insulaire, la digue bâtie par Alexandre pour l’atteindre en 332 av. J.-C., et l’ensablement qui a transformé un ouvrage de siège en isthme permanent.',
+    'legacy.cap.profile':
+      'De la crête à la rivière, avec les ermitages taillés dans la roche placés à leur hauteur réelle. La verticale est exagérée pour que la falaise se lise.',
+    'legacy.cap.grove':
+      'Étendue relative de la cédraie de 1800 à aujourd’hui. Cette courbe explique pourquoi l’arbre du drapeau est devenu une affaire de conservation.',
+
     'legacy.riskEyebrow': 'Ce qui n’est pas réglé',
     'legacy.riskTitle': 'Inscrit ne veut pas dire protégé',
     'legacy.riskInscribed': 'sites inscrits depuis 1984',
@@ -360,13 +433,13 @@ export const t: Record<Locale, Dict> = {
     'plan.legendRain': 'Précipitations mm',
     'plan.compare': 'Comparer les transferts',
     'plan.buildTitle': 'Esquissez un itinéraire',
-    'plan.buildNote': 'Choisissez des lieux selon vos jours. Rien n’est enregistré — c’est un brouillon.',
+    'plan.buildNote': 'Choisissez des lieux selon vos jours. Rien n’est enregistré. C’est un brouillon.',
     'plan.days': 'jours',
     'plan.selected': 'sélectionnés',
     'plan.sheetEyebrow': 'Aéroport – centre · 9 km',
     'plan.sheetTitle': 'Depuis l’aéroport de Beyrouth',
     'plan.sheetNote':
-      'Fixez le prix avant de monter — il n’y a pas de culture du compteur. Quinze minutes à 3 h, une heure à 18 h.',
+      'Fixez le prix avant de monter. Il n’y a pas de culture du compteur. Quinze minutes à 3 h, une heure à 18 h.',
     'plan.colMode': 'Mode',
     'plan.colCost': 'Prix',
     'plan.colTime': 'Durée',
@@ -392,7 +465,7 @@ export const t: Record<Locale, Dict> = {
     'login.password': 'Mot de passe',
     'login.submitIn': 'Se connecter',
     'login.submitUp': 'Créer le compte',
-    'login.demo': 'Démonstration — rien n’a été envoyé.',
+    'login.demo': 'Démonstration. Rien n’a été envoyé.',
     'login.swapToUp': 'Pas encore de compte ?',
     'login.swapToIn': 'Vous en avez déjà un ?',
     'login.caption':
@@ -425,7 +498,7 @@ export const t: Record<Locale, Dict> = {
 
     'community.composeLabel': 'Rédiger une publication',
     'community.composePlaceholder': 'Où êtes-vous allé ?',
-    'community.composeNote': 'Local uniquement — rien n’est envoyé',
+    'community.composeNote': 'Local uniquement. Rien n’est envoyé',
     'community.post': 'Publier',
     'community.likes': 'j’aime',
     'community.like2': 'J’aime',
@@ -456,7 +529,7 @@ export const t: Record<Locale, Dict> = {
       'Huit personnalités, classées par ce qu’elles ont créé plutôt que par leur notoriété. Choisissez un nom pour voir l’œuvre.',
     'people.work': 'L’œuvre',
     'people.portraitNote':
-      'Ce sont des personnes réelles : cette page montre donc leur œuvre plutôt que des portraits générés de leur visage — une ressemblance inventée sous un vrai nom est indiscernable d’une photographie pour qui la regarde. Chaque entrée garde un emplacement prêt pour un portrait sous licence.',
+      'Ce sont des personnes réelles : cette page montre donc leur œuvre plutôt que des portraits générés de leur visage. Une ressemblance inventée sous un vrai nom est indiscernable d’une photographie pour qui la regarde. Chaque entrée garde un emplacement prêt pour un portrait sous licence.',
   },
 
   ar: {
@@ -470,7 +543,7 @@ export const t: Record<Locale, Dict> = {
     'nav.login': 'تسجيل الدخول',
     'nav.menu': 'القائمة',
     'nav.close': 'إغلاق',
-    'nav.home': 'لبنان — الصفحة الرئيسية',
+    'nav.home': 'لبنان. الصفحة الرئيسية',
     'nav.theme': 'تبديل المظهر',
 
     'search.placeholder': 'جبيل، الأرز، الأبجدية…',
@@ -488,6 +561,23 @@ export const t: Record<Locale, Dict> = {
     'mosaic.all': 'كل الوجهات',
     'secrets.title': 'أشياء لا تضعها الخرائط',
     'secrets.lede': 'خمسة منها، بلا ترتيب. الباقي في قسم التاريخ، مرتّب حسب القرن.',
+    'secrets.caption': 'الحجر الضخم غير المكتمل في مقلع بعلبك. نحو ألف طنّ، قُطع من ثلاث جهات ولم يُحرَّك قطّ.',
+    'names.title': 'ماذا يُسمّى',
+    'names.lede':
+      'أربعة أسماء حملها البلد. اثنان منها يعودان إلى حقبة انتهت سنة ١٩٧٥، ومن غير الأمانة أن نقدّمهما لك بصيغة الحاضر.',
+    'names.swiss.name': 'سويسرا الشرق',
+    'names.swiss.why':
+      'أُطلق على البلد بسبب جباله وموسم التزلّج وقانون السريّة المصرفيّة سنة ١٩٥٦ وسياسة البقاء خارج حروب الآخرين. الحرب الأهليّة أنهت المقارنة سنة ١٩٧٥. أمّا الجبال والتزلّج فما زالا هنا.',
+    'names.paris.name': 'باريس الشرق',
+    'names.paris.why':
+      'بيروت في الخمسينات والستينات: ناطقة بالفرنسيّة، ساهرة، والمكان الذي كانت المنطقة كلّها تقصده لعطلة نهاية أسبوع. نصف الواجهات التي أكسبتها هذا الاسم لا تزال قائمة.',
+    'names.pearl.name': 'لؤلؤة الشرق',
+    'names.pearl.why':
+      'أقدم الأسماء الأربعة والوحيد الذي ما زال يُستعمل، وغالباً في وصف الساحل. اثنان وعشرون كيلومتراً من أصل مئتين وخمسة وعشرين هي شواطئ عامّة.',
+    'names.cedar.name': 'بلد الأرز',
+    'names.cedar.why':
+      'الوحيد الذي هو وصف لا مقارنة. هو على العلم، وورد في الكتاب المقدّس نحو سبعين مرّة، ولم يبقَ منه سوى بضع مئات من الجذوع القديمة.',
+
     'numbers.title': 'لبنان بالأرقام',
     'numbers.area': 'المساحة الإجمالية',
     'numbers.peak': 'قرنة السوداء، أعلى قمة',
@@ -552,7 +642,7 @@ export const t: Record<Locale, Dict> = {
     'story.spine': 'قرناً بعد قرن',
     'story.langTitle': 'ثلاث لغات في جملة واحدة',
     'story.langBody':
-      'الحديث في بيروت ينتقل بين العربية والفرنسية والإنكليزية في منتصف الجملة، ولا أحد يتوقّف ليترجم. ليست تبديلاً لغوياً بقدر ما هي لغة واحدة بثلاث مفردات — ولهذا بُني هذا الموقع باللغات الثلاث لا بالإنكليزية وحدها مع ترجمات مُلحقة.',
+      'الحديث في بيروت ينتقل بين العربية والفرنسية والإنكليزية في منتصف الجملة، ولا أحد يتوقّف ليترجم. ليست تبديلاً لغوياً بقدر ما هي لغة واحدة بثلاث مفردات. ولهذا بُني هذا الموقع باللغات الثلاث لا بالإنكليزية وحدها مع ترجمات مُلحقة.',
     'story.langAr': 'لغة البلد، بلهجة شاميّة أقرب إلى دمشق منها إلى القاهرة.',
     'story.langFr': 'قرن من الانتداب والمدارس. لا تزال لغة كثير من اللافتات ومعظم الأفران.',
     'story.langEn': 'لغة الأعمال، ولغة كلّ من هم دون الثلاثين ويشاهدون أيّ شيء على الإنترنت.',
@@ -560,12 +650,32 @@ export const t: Record<Locale, Dict> = {
     'legacy.eyebrow': 'ستّة على اللائحة',
     'legacy.title': 'ما نجا من الصراع عليه',
     'legacy.lede':
-      'ستّة مواقع تراث عالمي في بلد بحجم محافظة صغيرة — وكلٌّ منها مُدرج لسبب بنيوي يستحقّ أن يُرسم.',
+      'ستّة مواقع تراث عالمي في بلد بحجم محافظة صغيرة. وكلٌّ منها مُدرج لسبب بنيوي يستحقّ أن يُرسم.',
     'legacy.register': 'السجلّ',
     'legacy.colSite': 'الموقع',
     'legacy.colYear': 'سنة الإدراج',
     'legacy.colWhy': 'سبب الإدراج',
     'legacy.drawn': 'مرسومة بسماكة خطّ واحدة، لتُقرأ الستّة كمجموعة واحدة',
+    'legacy.fig': 'شكل',
+    'legacy.dia.trilithon': 'كتل القاعدة بالمقياس',
+    'legacy.dia.grid': 'مخطّط الشوارع',
+    'legacy.dia.strata': 'مقطع الطبقات',
+    'legacy.dia.causeway': 'تغيّر الساحل',
+    'legacy.dia.profile': 'مقطع الوادي',
+    'legacy.dia.grove': 'امتداد الحرش عبر الزمن',
+    'legacy.cap.trilithon':
+      'كتل القاعدة الثلاث مرسومة إلى جانب شخص طوله ١٫٧٥ م بالمقياس نفسه. النسبة هي الحجّة: لم يُفسَّر بشكل مقنع كيف حُرّكت هذه الكتل.',
+    'legacy.cap.grid':
+      'شارعان معمّدان يتقاطعان بزاوية قائمة داخل مستطيل مسوّر، مع الرباعي عند التقاطع والأبراج معلّمة على طول السور.',
+    'legacy.cap.strata':
+      'خمس طبقات سكن كبرى في مقطع رأسي، أقدمها في الأسفل. العمق هو المضمون: لم يُزل أحد ما سبقه.',
+    'legacy.cap.causeway':
+      'المدينة الجزيرة، والجسر الذي بناه الإسكندر للوصول إليها سنة ٣٣٢ ق.م، والطمي الذي حوّل عملاً حربيّاً إلى برزخ دائم.',
+    'legacy.cap.profile':
+      'من الحافة إلى النهر، مع المحابس المنحوتة في الصخر عند ارتفاعاتها الفعليّة. البُعد الرأسي مضخّم لتُقرأ الجرف.',
+    'legacy.cap.grove':
+      'الامتداد النسبي للحرش من ١٨٠٠ حتى اليوم. هذا الخطّ هو سبب تحوّل شجرة العلم إلى قضيّة حماية.',
+
     'legacy.riskEyebrow': 'الجزء غير المحسوم',
     'legacy.riskTitle': 'الإدراج لا يعني الأمان',
     'legacy.riskInscribed': 'مواقع مُدرجة منذ ١٩٨٤',
@@ -582,13 +692,13 @@ export const t: Record<Locale, Dict> = {
     'plan.legendRain': 'الأمطار ملم',
     'plan.compare': 'قارن وسائل الانتقال',
     'plan.buildTitle': 'ارسم خطّ سير مبدئيّاً',
-    'plan.buildNote': 'اختر أماكن بحسب أيّامك. لا شيء يُحفظ — هذه مسوّدة.',
+    'plan.buildNote': 'اختر أماكن بحسب أيّامك. لا شيء يُحفظ. هذه مسوّدة.',
     'plan.days': 'أيام',
     'plan.selected': 'مختارة',
     'plan.sheetEyebrow': 'المطار إلى المدينة · ٩ كم',
     'plan.sheetTitle': 'من مطار بيروت',
     'plan.sheetNote':
-      'اتّفق على الأجرة قبل الركوب — لا ثقافة عدّادات هنا. خمس عشرة دقيقة عند الثالثة فجراً، وساعة عند السادسة مساءً.',
+      'اتّفق على الأجرة قبل الركوب. لا ثقافة عدّادات هنا. خمس عشرة دقيقة عند الثالثة فجراً، وساعة عند السادسة مساءً.',
     'plan.colMode': 'الوسيلة',
     'plan.colCost': 'الكلفة',
     'plan.colTime': 'المدّة',
@@ -614,7 +724,7 @@ export const t: Record<Locale, Dict> = {
     'login.password': 'كلمة المرور',
     'login.submitIn': 'دخول',
     'login.submitUp': 'أنشئ الحساب',
-    'login.demo': 'هذه نسخة تجريبيّة — لم يُرسل شيء.',
+    'login.demo': 'هذه نسخة تجريبيّة. لم يُرسل شيء.',
     'login.swapToUp': 'ليس لديك حساب؟',
     'login.swapToIn': 'لديك حساب بالفعل؟',
     'login.caption':
@@ -647,7 +757,7 @@ export const t: Record<Locale, Dict> = {
 
     'community.composeLabel': 'اكتب منشوراً',
     'community.composePlaceholder': 'أين كنت؟',
-    'community.composeNote': 'محلّي فقط — لا شيء يُرفع',
+    'community.composeNote': 'محلّي فقط. لا شيء يُرفع',
     'community.post': 'انشر',
     'community.likes': 'إعجاب',
     'community.like2': 'أعجبني',
@@ -678,6 +788,6 @@ export const t: Record<Locale, Dict> = {
       'ثمانية منهم، بحسب ما صنعوه لا بحسب شهرتهم. اختر اسماً لترى العمل.',
     'people.work': 'العمل',
     'people.portraitNote':
-      'هؤلاء أشخاص حقيقيّون، ولذلك تعرض هذه الصفحة أعمالهم لا صوراً مولّدة لوجوههم — فالشبه المُختلق تحت اسم حقيقي لا يمكن تمييزه عن صورة فوتوغرافية لمن يراه. وكلّ مدخل يحتفظ بمكان جاهز لصورة مرخّصة إن أردت.',
+      'هؤلاء أشخاص حقيقيّون، ولذلك تعرض هذه الصفحة أعمالهم لا صوراً مولّدة لوجوههم. فالشبه المُختلق تحت اسم حقيقي لا يمكن تمييزه عن صورة فوتوغرافية لمن يراه. وكلّ مدخل يحتفظ بمكان جاهز لصورة مرخّصة إن أردت.',
   },
 };

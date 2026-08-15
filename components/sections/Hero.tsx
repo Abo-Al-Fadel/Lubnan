@@ -63,7 +63,7 @@ export function HeroOcclusion({
       <div className="scrim relative flex min-h-[100svh] flex-col text-hero-ink">
         <div className="relative flex flex-1 flex-col">
           <h1 className="sr-only">
-            Lubnān — a guide to Lebanon&rsquo;s coast, mountains and ruins
+            Lubnān. A guide to Lebanon&rsquo;s coast, mountains and ruins
           </h1>
 
           {/* A corner wash under the standfirst. The head scrim is tuned for an
@@ -71,12 +71,17 @@ export function HeroOcclusion({
               eggshell on it measured about 2.5:1. Darkening the whole head
               gradient to fix one paragraph would flatten the sky across the
               entire frame, so the weight goes only where the type is. */}
+          {/* The gradient has to reach transparent *inside* the element, not
+              at its edge. At 135%/120% it was still ~11% opaque where the box
+              stopped, so the wash ended on a straight vertical line down the
+              middle of the frame — a dark rectangle with clean edges rather
+              than a wash. Bigger box, gradient fully out by 68%. */}
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute right-0 top-0 z-[5] hidden h-[52%] w-[58%] md:block"
+            className="pointer-events-none absolute right-0 top-0 z-[5] hidden h-[74%] w-[82%] md:block"
             style={{
               background:
-                'radial-gradient(135% 120% at 100% 0%, var(--scrim-strong) 0%, var(--scrim-strong) 34%, color-mix(in srgb, var(--scrim-strong) 72%, transparent) 54%, color-mix(in srgb, var(--scrim-strong) 34%, transparent) 72%, transparent 90%)',
+                'radial-gradient(100% 100% at 100% 0%, var(--scrim-strong) 0%, var(--scrim-strong) 22%, color-mix(in srgb, var(--scrim-strong) 74%, transparent) 38%, color-mix(in srgb, var(--scrim-strong) 38%, transparent) 52%, color-mix(in srgb, var(--scrim-strong) 12%, transparent) 62%, transparent 68%)',
             }}
           />
 
@@ -184,10 +189,16 @@ export function HeroOcclusion({
           the sections instead — as it was — there is nothing behind it to
           blur, and all you get is a gradient rectangle sitting on a hard
           edge. */}
-      {/* Marks where hero ink stops being safe. See Navbar. */}
-      <div id="nav-sentinel" aria-hidden="true" className="h-px w-full" />
-
       <div className="seam h-28 w-full md:h-44">
+        {/* Marks where hero ink stops being safe. See Navbar. Positioned
+            rather than in flow: as a 1px block it put a band of un-scrimmed
+            plate between the scrim and the seam, and that read as a hard
+            line. */}
+        <div
+          id="nav-sentinel"
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 h-px"
+        />
         <div aria-hidden="true" className="seam-blur seam-blur-1" />
         <div aria-hidden="true" className="seam-blur seam-blur-2" />
         <div aria-hidden="true" className="seam-blur seam-blur-3" />

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, useState } from 'react';
+import { BORDER, COASTLINE } from '@/data/lebanon-border';
 
 /**
  * The country, drawn.
@@ -10,45 +11,13 @@ import { useEffect, useId, useRef, useState } from 'react';
  * hairline is Lebanon's own border and coastline, so the one graphic element
  * on the page carries information.
  *
- * The outline is real geography — a simplified lon/lat ring projected here
- * rather than hand-authored path data, so the shape is honest and the
- * waypoints land where the places actually are. Equirectangular with a cos(φ)
- * correction is accurate enough at this scale and keeps the projection legible
- * as three lines of arithmetic.
+ * The outline is the real national boundary, from geoBoundaries ADM0 (public
+ * domain), simplified to 361 points and projected here. It replaces a 26-point
+ * outline I had picked by eye, which read as a tracing: straight runs where
+ * the coast actually bends, and a southern border in the wrong place.
+ * Equirectangular with a cos(φ) correction is accurate at this scale and keeps
+ * the projection legible as three lines of arithmetic.
  */
-
-/** Simplified national boundary, clockwise from the north-west coast. */
-const BOUNDARY: [number, number][] = [
-  [35.98, 34.63],
-  [35.83, 34.48],
-  [35.78, 34.42],
-  [35.72, 34.3],
-  [35.66, 34.25],
-  [35.65, 34.12],
-  [35.6, 34.0],
-  [35.55, 33.95],
-  [35.48, 33.9],
-  [35.45, 33.82],
-  [35.42, 33.7],
-  [35.38, 33.56],
-  [35.3, 33.4],
-  [35.2, 33.27],
-  [35.11, 33.09],
-  [35.3, 33.06],
-  [35.55, 33.25],
-  [35.62, 33.25],
-  [35.82, 33.42],
-  [35.9, 33.62],
-  [36.0, 33.82],
-  [36.22, 34.0],
-  [36.33, 34.2],
-  [36.42, 34.42],
-  [36.32, 34.55],
-  [36.1, 34.63],
-];
-
-/** Where the coastline ends and the land border begins, as ring indices. */
-const COAST_END = 14;
 
 export type Waypoint = {
   id: string;
@@ -59,11 +28,15 @@ export type Waypoint = {
   side?: 'left' | 'right';
 };
 
-const LON = [35.05, 36.5] as const;
-const LAT = [33.0, 34.72] as const;
+/* Bounds taken from the data itself, with a small margin, so the country fills
+   the frame instead of floating inside guessed extents. */
+const LON = [35.06, 36.67] as const;
+const LAT = [33.0, 34.74] as const;
 const W = 420;
 const H = 760;
 const PAD = 26;
+/** Space reserved either side of the projection for waypoint labels. */
+const LABEL_ROOM = 170;
 
 /** Equirectangular, x compressed by cos of the mid-latitude. */
 function project([lon, lat]: [number, number]): [number, number] {
@@ -120,17 +93,53 @@ export function LebanonMap({
     };
   }, []);
 
-  const border = toPath(BOUNDARY, true);
-  const coast = toPath(BOUNDARY.slice(0, COAST_END + 1));
+  const border = toPath(BORDER, true);
+  const coast = toPath(COASTLINE);
+
+  /**
+   * Label layout.
+   *
+   * Two things go wrong without it. Qadisha and the Cedars are eleven minutes
+   * of latitude apart, so their labels printed on top of each other; and a
+   * long name hung off an eastern pin ran past the frame and was clipped by
+   * the section's overflow. So: choose the side that has room, then walk down
+   * each side pushing any label that would touch its neighbour.
+   */
+  const CHAR = 7.4; // approx px per uppercase glyph at 12px with tracking
+  const MIN_GAP = 17;
+
+  const placed = waypoints
+    .map((w) => {
+      const [x, y] = project([w.lon, w.lat]);
+      const width = w.name.length * CHAR;
+      // Prefer the requested side, but flip if the label would leave the frame.
+      let right = w.side !== 'left';
+      if (right && x + 32 + width > W + LABEL_ROOM) right = false;
+      if (!right && x - 32 - width < -LABEL_ROOM) right = true;
+      return { w, x, y, width, right, labelY: y };
+    })
+    .sort((a, b) => a.y - b.y);
+
+  for (const side of [true, false]) {
+    let lastY = -Infinity;
+    for (const p of placed) {
+      if (p.right !== side) continue;
+      if (p.labelY - lastY < MIN_GAP) p.labelY = lastY + MIN_GAP;
+      lastY = p.labelY;
+    }
+  }
 
   return (
+    /* The viewBox is wider than the projection so labels live *inside* it.
+       With `overflow: visible` they hung outside the box and were cut off by
+       the first ancestor with overflow hidden — "The Cedars of God" lost its
+       last word. */
     <svg
       ref={ref}
-      viewBox={`0 0 ${W} ${H}`}
+      viewBox={`${-LABEL_ROOM} 0 ${W + LABEL_ROOM * 2} ${H}`}
       className={className}
       role="img"
-      aria-label="Map of Lebanon with the eight destinations marked"
-      style={{ overflow: 'visible' }}
+      aria-label="Map of Lebanon with the destinations marked"
     >
       <defs>
         <clipPath id={`${uid}-land`}>
@@ -141,36 +150,12 @@ export function LebanonMap({
       {/* Land wash, so the country reads as a body and not just an edge. */}
       <path d={border} fill="var(--hero-ink)" opacity={drawn ? 0.07 : 0} className="map-fade" />
 
-      {/* The two ranges, clipped to the border. Content: this is why the
-          country has a snowline and a coastline an hour apart. */}
-      <g clipPath={`url(#${uid}-land)`} opacity={drawn ? 0.5 : 0} className="map-fade">
-        {[
-          [
-            [35.62, 34.42],
-            [35.8, 34.2],
-            [35.9, 33.98],
-            [35.62, 33.7],
-            [35.5, 33.4],
-          ],
-          [
-            [36.28, 34.42],
-            [36.18, 34.1],
-            [36.02, 33.85],
-            [35.86, 33.5],
-          ],
-        ].map((ridge, i) => (
-          <path
-            key={i}
-            d={toPath(ridge as [number, number][])}
-            fill="none"
-            stroke="var(--hero-ink)"
-            strokeWidth={11}
-            strokeLinecap="round"
-            strokeDasharray="1 15"
-            opacity={0.55}
-          />
-        ))}
-      </g>
+      {/* The mountain ranges used to be drawn here as two dashed strokes. They
+          are gone: at a thin dash they read as a scattering of specks over the
+          photograph, and thickened they read as a smear. Neither carried
+          information the border and the pins do not already give, and the rule
+          on this project is that the one graphic element on a page has to be
+          content rather than decoration. */}
 
       {/* Border, then the coastline drawn heavier over it. */}
       <path
@@ -192,9 +177,7 @@ export function LebanonMap({
         className={drawn ? 'map-draw map-draw--coast' : 'map-draw'}
       />
 
-      {waypoints.map((w, i) => {
-        const [x, y] = project([w.lon, w.lat]);
-        const right = w.side !== 'left';
+      {placed.map(({ w, x, y, labelY, right }, i) => {
         const active = activeId === w.id;
         return (
           <g
@@ -215,14 +198,15 @@ export function LebanonMap({
                 : undefined
             }
           >
-            <line
-              x1={x}
-              y1={y}
-              x2={right ? x + 26 : x - 26}
-              y2={y}
+            {/* Elbow, not a straight tick: the label may have been pushed off
+                the pin's own latitude to clear its neighbour, and the leader
+                has to still point at the place it names. */}
+            <path
+              d={`M${x} ${y} H${right ? x + 14 : x - 14} V${labelY} H${right ? x + 26 : x - 26}`}
+              fill="none"
               stroke="var(--hero-ink)"
               strokeWidth={1}
-              opacity={active ? 0.9 : 0.42}
+              opacity={active ? 0.95 : 0.5}
             />
             <circle
               cx={x}
@@ -232,14 +216,18 @@ export function LebanonMap({
             />
             <text
               x={right ? x + 32 : x - 32}
-              y={y + 4}
+              y={labelY + 4}
               textAnchor={right ? 'start' : 'end'}
               fill="var(--hero-ink)"
-              opacity={active ? 1 : 0.82}
+              opacity={active ? 1 : 0.86}
               style={{
                 font: '500 12px var(--font-body), sans-serif',
-                letterSpacing: '0.12em',
+                letterSpacing: '0.1em',
                 textTransform: 'uppercase',
+                paintOrder: 'stroke',
+                stroke: 'var(--scrim-strong)',
+                strokeWidth: 3,
+                strokeLinejoin: 'round',
               }}
             >
               {w.name}

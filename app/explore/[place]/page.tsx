@@ -42,7 +42,7 @@ export default function PlacePage({ params }: { params: { place: string } }) {
         {/* ── Occlusion hero, one per place ───────────────────────────── */}
         <section className="relative flex flex-col overflow-hidden bg-band">
           <PhotoField
-            brief={`${place.name}, ${place.region} — wide establishing shot in warm low sun, rich natural colour`}
+            brief={`${place.name}, ${place.region}. Wide establishing shot in warm low sun, rich natural colour`}
             showSlots={false}
             plate={place.heroPlate}
             priority
@@ -56,7 +56,7 @@ export default function PlacePage({ params }: { params: { place: string } }) {
             style={{ viewTransitionName: `place-${place.id}` }}
           />
 
-          <div className="scrim relative flex min-h-[86svh] flex-col justify-end px-5 pb-10 pt-32 text-hero-ink md:px-10 md:pb-14">
+          <div className="scrim scrim-deep relative flex min-h-[86svh] flex-col justify-end px-5 pb-10 pt-32 text-hero-ink md:px-10 md:pb-14">
             <div className="relative flex-1">
               <span
                 aria-hidden="true"
@@ -83,9 +83,13 @@ export default function PlacePage({ params }: { params: { place: string } }) {
             </div>
           </div>
 
-          <div id="nav-sentinel" aria-hidden="true" className="h-px w-full" />
-
           <div className="seam h-24 w-full md:h-36">
+            {/* See Hero: in flow this was a 1px band of un-scrimmed plate. */}
+            <div
+              id="nav-sentinel"
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 top-0 h-px"
+            />
             <div aria-hidden="true" className="seam-blur seam-blur-1" />
             <div aria-hidden="true" className="seam-blur seam-blur-2" />
             <div aria-hidden="true" className="seam-blur seam-blur-3" />
@@ -103,7 +107,7 @@ export default function PlacePage({ params }: { params: { place: string } }) {
 
           <div className="relative">
             <PhotoField
-              brief={`${place.name} — wide annotated frame with clear separation between the named features, warm daylight`}
+              brief={`${place.name}. Wide annotated frame with clear separation between the named features, warm daylight`}
               showSlots={false}
               plate={place.framePlate}
               className="aspect-[16/10] w-full md:aspect-[21/9]"
@@ -259,7 +263,7 @@ export default function PlacePage({ params }: { params: { place: string } }) {
                 className="group w-[78vw] shrink-0 snap-start sm:w-[46vw] md:w-[30vw]"
               >
                 <PhotoField
-                  brief={`${p.name} — establishing shot, warm light`}
+                  brief={`${p.name}. Establishing shot, warm light`}
                   showSlots={false}
                   plate={p.plateMosaic ?? p.plateRail}
                   className="aspect-[4/3] w-full [&>img]:transition-transform [&>img]:duration-[900ms] [&>img]:ease-out group-hover:[&>img]:scale-[1.06]"

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useMemo, useState } from 'react';
 import { Navbar, SiteFooter } from '@/components/sections/Chrome';
@@ -198,7 +198,7 @@ export default function CommunityPage() {
                   </p>
 
                   <PhotoField
-                    brief={`${p.place} — ${p.caption.slice(0, 60)}`}
+                    brief={`${p.place}. ${p.caption.slice(0, 60)}`}
                     showSlots={false}
                     plate={p.plate}
                     className={`w-full ${p.tall ? 'aspect-[4/5]' : 'aspect-square'}`}

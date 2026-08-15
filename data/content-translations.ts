@@ -12,7 +12,7 @@ type Dict = Record<string, string>;
 export const content: Record<Locale, Dict> = {
   en: {
     'hero.standfirst':
-      'Two ranges run the length of the country and hold their snow into spring — which is how somewhere this small keeps a coastline and a treeline within an hour of each other.',
+      'Two ranges run the length of the country and hold their snow into spring, which is how somewhere this small keeps a coastline and a treeline within an hour of each other.',
     'lede.statement': 'The tree on the flag is down to a few hundred trunks.',
     'lede.note1':
       'Fences went up around Horsh Arz el-Rab in the nineteenth century because goats were eating every seedling before it could root.',
@@ -54,7 +54,7 @@ export const content: Record<Locale, Dict> = {
 
   fr: {
     'hero.standfirst':
-      'Deux chaînes parcourent le pays sur toute sa longueur et gardent leur neige jusqu’au printemps — c’est ainsi qu’un territoire si petit garde un littoral et une limite forestière à une heure l’un de l’autre.',
+      'Deux chaînes parcourent le pays sur toute sa longueur et gardent leur neige jusqu’au printemps. C’est ainsi qu’un territoire si petit garde un littoral et une limite forestière à une heure l’un de l’autre.',
     'lede.statement': 'L’arbre du drapeau se réduit à quelques centaines de troncs.',
     'lede.note1':
       'Des clôtures ont été posées autour de Horsh Arz el-Rab au dix-neuvième siècle, car les chèvres mangeaient chaque jeune pousse avant qu’elle ne s’enracine.',
@@ -96,7 +96,7 @@ export const content: Record<Locale, Dict> = {
 
   ar: {
     'hero.standfirst':
-      'سلسلتان جبليتان تمتدّان على طول البلاد وتحتفظان بثلجهما حتى الربيع — وهكذا يجمع بلد بهذا الصغر بين ساحله وحدّ أشجاره في ساعة واحدة.',
+      'سلسلتان جبليتان تمتدّان على طول البلاد وتحتفظان بثلجهما حتى الربيع. وهكذا يجمع بلد بهذا الصغر بين ساحله وحدّ أشجاره في ساعة واحدة.',
     'lede.statement': 'شجرة العلم لم يبقَ منها سوى بضع مئات من الجذوع.',
     'lede.note1':
       'أُقيمت الأسوار حول حرش أرز الربّ في القرن التاسع عشر لأن الماعز كان يأكل كل شتلة قبل أن تتجذّر.',

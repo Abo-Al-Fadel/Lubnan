@@ -1,4 +1,4 @@
-import destinations from '@/data/destinations.json';
+﻿import destinations from '@/data/destinations.json';
 
 /**
  * Everything the place-detail template needs beyond the card data already in
@@ -67,7 +67,7 @@ const extra: Record<string, PlaceExtra> = {
     framePlate: 'L1',
     standfirst:
       'Seven thousand years of people, stacked. The crusader keep sits on Roman, on Phoenician, on Bronze Age, and the harbour below it still works.',
-    body: 'Byblos is the argument for staying put. Every civilisation that arrived built on what the last one left rather than clearing it, so the site reads as a section drawing rather than a ruin — you can stand at one corner and see four thousand years of wall in a single glance. The alphabet that became Greek and then Latin shipped out of the harbour at the bottom of the hill, which is now about the size of a car park and full of fishing boats.',
+    body: 'Byblos is the argument for staying put. Every civilisation that arrived built on what the last one left rather than clearing it, so the site reads as a section drawing rather than a ruin. You can stand at one corner and see four thousand years of wall in a single glance. The alphabet that became Greek and then Latin shipped out of the harbour at the bottom of the hill, which is now about the size of a car park and full of fishing boats.',
     callouts: [
       { x: 0.28, y: 0.42, label: 'Crusader keep', body: 'Twelfth century, built from Roman columns laid on their sides as bracing.' },
       { x: 0.62, y: 0.66, label: 'The harbour', body: 'Still working. Boats leave from the north wall most mornings.' },
@@ -89,7 +89,7 @@ const extra: Record<string, PlaceExtra> = {
     framePlate: 'L2',
     standfirst:
       'The largest Roman temple ever built, standing on three foundation stones that nobody has satisfactorily explained moving.',
-    body: 'The Temple of Jupiter had fifty-four columns. Six are still standing, and they are twenty-two metres tall. Underneath them the podium contains three limestone blocks of roughly eight hundred tonnes each — the trilithon — and a fourth, larger still, remains in the quarry eight hundred metres to the south, half-cut and abandoned. Whatever method moved the first three was clearly at its limit. The site sits in the Bekaa at a thousand metres, which is why the light here is harder and clearer than on the coast.',
+    body: 'The Temple of Jupiter had fifty-four columns. Six are still standing, and they are twenty-two metres tall. Underneath them the podium contains the trilithon: three limestone blocks of roughly eight hundred tonnes each. A fourth, larger still, remains in the quarry eight hundred metres to the south, half-cut and abandoned. Whatever method moved the first three was clearly at its limit. The site sits in the Bekaa at a thousand metres, which is why the light here is harder and clearer than on the coast.',
     callouts: [
       { x: 0.34, y: 0.55, label: 'The trilithon', body: 'Three blocks, roughly 800 tonnes each, in the western podium wall.' },
       { x: 0.66, y: 0.3, label: 'Six columns', body: 'All that stands of fifty-four. Twenty-two metres to the capital.' },
@@ -111,7 +111,7 @@ const extra: Record<string, PlaceExtra> = {
     framePlate: 'L3',
     standfirst:
       'Nine kilometres of surveyed limestone gallery on two levels. You walk the upper one and take a boat through the lower.',
-    body: 'The Nahr al-Kalb cut these galleries out of the limestone over a few million years and is still doing it. The upper cavern holds one of the largest known stalactites — about eight metres — and the acoustics are good enough that concerts have been held inside. The lower level is a river, navigated by flat-bottomed boat for a few hundred metres before the guides turn you around. Photography is not allowed inside, which is unusual now and worth knowing before you carry a camera up.',
+    body: 'The Nahr al-Kalb cut these galleries out of the limestone over a few million years and is still doing it. The upper cavern holds one of the largest known stalactites at about eight metres, and the acoustics are good enough that concerts have been held inside. The lower level is a river, navigated by flat-bottomed boat for a few hundred metres before the guides turn you around. Photography is not allowed inside, which is unusual now and worth knowing before you carry a camera up.',
     callouts: [
       { x: 0.44, y: 0.38, label: 'Upper gallery', body: 'Walkable. The 8 m stalactite is roughly a third of the way in.' },
       { x: 0.7, y: 0.62, label: 'Boat turnaround', body: 'The lower river is navigable in winter only when the water is low enough.' },
@@ -132,8 +132,8 @@ const extra: Record<string, PlaceExtra> = {
     heroPlate: 'J4',
     framePlate: 'L4',
     standfirst:
-      'Horsh Arz el-Rab — the Forest of the Cedars of God. A few hundred trunks at two thousand metres, some of them a thousand years old.',
-    body: 'This is the tree on the flag, and there is not much of it left. Fences went up in the nineteenth century because goats were eating every seedling before it could root, and the grove has been managed ever since. Snow closes the road above Bsharri for part of most winters — the trees have handled roughly forty of those winters per human lifetime. Stand under the oldest ones and the scale is not height, it is girth: some of the trunks take four people to reach around.',
+      'Horsh Arz el-Rab. The Forest of the Cedars of God. A few hundred trunks at two thousand metres, some of them a thousand years old.',
+    body: 'This is the tree on the flag, and there is not much of it left. Fences went up in the nineteenth century because goats were eating every seedling before it could root, and the grove has been managed ever since. Snow closes the road above Bsharri for part of most winters. The trees have handled roughly forty of those winters per human lifetime. Stand under the oldest ones and the scale is not height, it is girth: some of the trunks take four people to reach around.',
     callouts: [
       { x: 0.3, y: 0.5, label: 'The old grove', body: 'A few hundred trees. The oldest are estimated above a thousand years.' },
       { x: 0.68, y: 0.44, label: 'Replanting', body: 'Seedlings behind the fence line, planted from the 1990s onward.' },
@@ -142,7 +142,7 @@ const extra: Record<string, PlaceExtra> = {
     practical: [
       { label: 'Getting there', value: '120 km from Beirut · 2 hr 30 via Bsharri' },
       { label: 'Best season', value: 'June–October for walking, January–March for snow' },
-      { label: 'Altitude', value: '~2,000 m — bring a layer even in summer' },
+      { label: 'Altitude', value: '~2,000 m. Bring a layer even in summer' },
       { label: 'Entry', value: 'Small fee at the grove gate' },
     ],
   },
@@ -155,7 +155,7 @@ const extra: Record<string, PlaceExtra> = {
     framePlate: 'L5',
     standfirst:
       'A gorge with monasteries cut into its walls. People moved in to be left alone and stayed for a thousand years.',
-    body: 'Qadisha means holy, and the valley earned it by being difficult to reach. Monks and hermits cut cells and chapels directly into the cliff faces, some of them only reachable by a path that is still a scramble. The valley floor is walkable end to end in a long day, and the drop from the rim at Bsharri to the river is close to a kilometre. It is on the UNESCO list jointly with the cedar grove above it, which is the correct way to list them — one is the reason the other survived.',
+    body: 'Qadisha means holy, and the valley earned it by being difficult to reach. Monks and hermits cut cells and chapels directly into the cliff faces, some of them only reachable by a path that is still a scramble. The valley floor is walkable end to end in a long day, and the drop from the rim at Bsharri to the river is close to a kilometre. It is on the UNESCO list jointly with the cedar grove above it, which is the correct way to list them. One is the reason the other survived.',
     callouts: [
       { x: 0.26, y: 0.36, label: 'Deir Qannoubine', body: 'Cut into the rock face. Patriarchal seat for roughly five centuries.' },
       { x: 0.6, y: 0.58, label: 'Valley floor', body: 'The Qadisha river. Walkable end to end in a long day.' },
@@ -177,7 +177,7 @@ const extra: Record<string, PlaceExtra> = {
     framePlate: 'L6',
     standfirst:
       'Alexander built a causeway to take this island. The sand never left, and Tyre has been a peninsula ever since.',
-    body: 'Tyre was an island city and it was, for a long time, unconquerable. Alexander solved that in 332 BC by building a mole out to it from the mainland — and the mole silted up, permanently joining the two. The Roman hippodrome on the landward side held tens of thousands for chariot racing and is one of the largest ever found. The city below is still a working fishing port with a good beach at the end of it, which is a more useful combination than most archaeological sites manage.',
+    body: 'Tyre was an island city and it was, for a long time, unconquerable. Alexander solved that in 332 BC by building a mole out to it from the mainland, and the mole silted up, permanently joining the two. The Roman hippodrome on the landward side held tens of thousands for chariot racing and is one of the largest ever found. The city below is still a working fishing port with a good beach at the end of it, which is a more useful combination than most archaeological sites manage.',
     callouts: [
       { x: 0.36, y: 0.62, label: 'Hippodrome', body: 'Roman, one of the largest known. The turning posts are still in place.' },
       { x: 0.7, y: 0.44, label: 'The causeway', body: "Alexander's mole, now permanently silted into an isthmus." },
@@ -187,7 +187,7 @@ const extra: Record<string, PlaceExtra> = {
       { label: 'Getting there', value: '83 km south of Beirut · 1 hr 30' },
       { label: 'Best season', value: 'May–October for the beach; year round for the site' },
       { label: 'Hours', value: '08:30 – 18:00' },
-      { label: 'Entry', value: 'Two ticketed sites — Al-Bass and the marine city' },
+      { label: 'Entry', value: 'Two ticketed sites. Al-Bass and the marine city' },
     ],
   },
   beirut: {
@@ -225,7 +225,7 @@ const extra: Record<string, PlaceExtra> = {
     framePlate: 'J8',
     standfirst:
       'A Phoenician sea wall still takes the swell off the old harbour, and the town behind it has become the coast’s best evening.',
-    body: 'The wall is the thing: a natural sandstone ridge that the Phoenicians extended and squared off, and it has been breaking the Mediterranean for the town for something like three thousand years. Batroun is small, walkable, and has quietly become where people from Beirut go for a weekend — old stone streets, a lot of good seafood, and lemonade that the town is genuinely known for. The vineyards start about twenty minutes inland.',
+    body: 'The wall is the thing: a natural sandstone ridge that the Phoenicians extended and squared off, and it has been breaking the Mediterranean for the town for something like three thousand years. Batroun is small, walkable, and has quietly become where people from Beirut go for a weekend. Old stone streets, a lot of good seafood, and lemonade that the town is genuinely known for. The vineyards start about twenty minutes inland.',
     callouts: [
       { x: 0.3, y: 0.66, label: 'The Phoenician wall', body: 'Natural ridge, squared and extended. Still doing its job.' },
       { x: 0.66, y: 0.46, label: 'Old town', body: 'Sandstone streets behind the harbour, walkable end to end.' },
@@ -235,7 +235,7 @@ const extra: Record<string, PlaceExtra> = {
       { label: 'Getting there', value: '54 km north of Beirut · 1 hr' },
       { label: 'Best season', value: 'May–October' },
       { label: 'Worth ordering', value: 'Lemonade, and whatever came in that morning' },
-      { label: 'Entry', value: 'Free — it is a town, not a site' },
+      { label: 'Entry', value: 'Free. It is a town, not a site' },
     ],
   },
 };

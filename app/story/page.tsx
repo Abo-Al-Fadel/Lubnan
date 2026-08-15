@@ -27,7 +27,7 @@ const ERAS = [
     title: 'The alphabet leaves by boat',
     plate: 'M1',
     brief: 'Byblos harbour at sunrise, warm gold on still water, fishing boats, honey stone quay',
-    body: 'Twenty-two consonants, no vowels, shipped out of Byblos and rearranged by everyone who received them. Greek took it and added vowels. Latin took it from Greek. Almost every alphabet west of India descends from what left that harbour — which is now roughly the size of a car park.',
+    body: 'Twenty-two consonants, no vowels, shipped out of Byblos and rearranged by everyone who received them. Greek took it and added vowels. Latin took it from Greek. Almost every alphabet west of India descends from what left that harbour, which is now roughly the size of a car park.',
     fact: 'The Ahiram sarcophagus carries the earliest long text in the alphabet.',
   },
   {
@@ -36,7 +36,7 @@ const ERAS = [
     title: 'Tyre, Sidon, and the whole sea',
     plate: 'M2',
     brief: 'The Mediterranean off Tyre at golden hour, Roman columns in warm silhouette',
-    body: 'Phoenician crews mapped the Mediterranean before anyone drew it, founded Carthage, and by Herodotus’ account rounded Africa. They were traders rather than conquerors, which is why they left harbours instead of monuments — and why the harbours are still harbours.',
+    body: 'Phoenician crews mapped the Mediterranean before anyone drew it, founded Carthage, and by Herodotus’ account rounded Africa. They were traders rather than conquerors, which is why they left harbours instead of monuments, and why the harbours are still harbours.',
     fact: 'Tyrian purple took ten thousand murex shells to dye a single robe.',
   },
   {
@@ -54,7 +54,7 @@ const ERAS = [
     title: 'A city on a grid, then abandoned',
     plate: 'M4',
     brief: 'Anjar Umayyad arcades in warm low sun, long shadows across the grid, green grass',
-    body: 'The Umayyads laid out Anjar as a single planned city on a Roman grid — two colonnaded streets crossing at right angles, a palace, baths, a mosque — and then walked away from it within a few decades. It is the only Umayyad city of its kind, and it is legible from the air in one look.',
+    body: 'The Umayyads laid out Anjar as a single planned city on a Roman grid. Two colonnaded streets crossing at right angles, a palace, baths, a mosque, and then walked away from it within a few decades. It is the only Umayyad city of its kind, and it is legible from the air in one look.',
     fact: 'Forty towers around a walled rectangle, built and emptied inside one lifetime.',
   },
   {
@@ -63,7 +63,7 @@ const ERAS = [
     title: 'The souks that never closed',
     plate: 'M5',
     brief: 'Tripoli Mamluk souk interior, warm light shafts through the vaulting, spice colour',
-    body: 'Tripoli holds the largest concentration of Mamluk architecture outside Cairo — hammams, madrasas, khans, and a souk that has never stopped trading in seven hundred years. The vaulting throws light down in shafts, and the soap khan still sells soap.',
+    body: 'Tripoli holds the largest concentration of Mamluk architecture outside Cairo: hammams, madrasas, khans, and a souk that has never stopped trading in seven hundred years. The vaulting throws light down in shafts, and the soap khan still sells soap.',
     fact: 'Khan al-Saboun has been making olive-oil soap on the same site since the 1500s.',
   },
   {
@@ -72,7 +72,7 @@ const ERAS = [
     title: 'Silk paid for the mountain',
     plate: 'M6',
     brief: 'Beiteddine palace courtyard in warm afternoon light, ochre arcades and fountain',
-    body: 'Under Ottoman rule the mountain largely ran itself through local emirs, and silk paid for it. Beiteddine was built over thirty years and is the best surviving argument for what that money bought — courtyards, arcades, and a hammam with a domed ceiling pierced for light.',
+    body: 'Under Ottoman rule the mountain largely ran itself through local emirs, and silk paid for it. Beiteddine was built over thirty years and is the best surviving argument for what that money bought. Courtyards, arcades, and a hammam with a domed ceiling pierced for light.',
     fact: 'At its height the mountain sent raw silk to Lyon by the shipload.',
   },
   {

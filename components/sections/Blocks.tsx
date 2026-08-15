@@ -31,36 +31,54 @@ export function Lede({
      along a shallow arc, alternating vertical offsets with the tallest at the
      centre, so the row reads as a composition rather than as a gallery strip.
      This section was pure text, which is what made it feel like a wall. */
+  /* Every photograph is captioned. Five uncaptioned images in a row are
+     decoration; the same five with a place, a date and one fact are the
+     densest part of the page. */
   const arc = [
     {
       plate: 'G1',
       ratio: 'aspect-[3/4]',
       shift: 'md:translate-y-8',
       brief: 'Sidon sea castle on its causeway, portrait, late afternoon',
+      place: 'Sidon',
+      when: '1228',
+      fact: 'Crusader castle on a causeway, built from Roman columns laid flat.',
     },
     {
       plate: 'G2',
       ratio: 'aspect-[4/5]',
       shift: 'md:translate-y-2',
       brief: 'Anjar Umayyad arcades, portrait, low sun through the arches',
+      place: 'Anjar',
+      when: '714',
+      fact: 'The only Umayyad city built on a Roman grid, emptied within decades.',
     },
     {
       plate: 'G3',
       ratio: 'aspect-[4/5]',
       shift: 'md:-translate-y-6',
       brief: 'Beiteddine palace courtyard, portrait, arcaded facade and fountain',
+      place: 'Beiteddine',
+      when: '1818',
+      fact: 'Thirty years of building, paid for by mountain silk.',
     },
     {
       plate: 'G4',
       ratio: 'aspect-[4/5]',
       shift: 'md:translate-y-2',
       brief: 'Tripoli Mamluk souk interior, portrait, light shafts through vaulting',
+      place: 'Tripoli',
+      when: '1289',
+      fact: 'The largest Mamluk quarter outside Cairo, still trading.',
     },
     {
       plate: 'G5',
       ratio: 'aspect-[3/4]',
       shift: 'md:translate-y-8',
       brief: 'Bekaa vineyard rows toward the Anti-Lebanon range, portrait',
+      place: 'Bekaa',
+      when: '1857',
+      fact: 'Commercial wine since Château Ksara. The Romans got there first.',
     },
   ];
 
@@ -95,6 +113,13 @@ export function Lede({
               className={`${a.ratio} w-full [&>img]:transition-transform [&>img]:duration-[900ms] [&>img]:ease-out group-hover:[&>img]:scale-[1.06]`}
               variant={i % 2 === 0 ? 'low' : 'high'}
             />
+            <div className="mt-3 flex items-baseline justify-between gap-2 border-t border-ink-ghost pt-3">
+              <span className="font-display text-sm uppercase tracking-wide text-ink">
+                {a.place}
+              </span>
+              <span className="micro figures shrink-0 text-ink-dim">{a.when}</span>
+            </div>
+            <p className="mt-2 text-[0.72rem] leading-[1.6] text-ink-dim">{a.fact}</p>
           </div>
         ))}
       </div>
@@ -115,7 +140,7 @@ export function DestinationRail({ showSlots }: Slots) {
         <Reveal as="p" mode="words" className="max-w-[18ch] font-display text-[clamp(1.5rem,3vw,2.5rem)] font-medium uppercase leading-[1.06] text-ink">
           {tr('rail.title')}
         </Reveal>
-        <p className="micro figures shrink-0 text-ink-dim">01 — 08</p>
+        <p className="micro figures shrink-0 text-ink-dim">01. 08</p>
       </div>
 
       <div className="rail flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 md:gap-6 md:px-10">
@@ -126,7 +151,7 @@ export function DestinationRail({ showSlots }: Slots) {
           >
             {/* IMAGE: see brief below — one per destination, replaced 1:1 later */}
             <PhotoField
-              brief={`${d.name}, ${d.region} — establishing shot that reads at card size, natural light, no people in frame`}
+              brief={`${d.name}, ${d.region}. Establishing shot that reads at card size, natural light, no people in frame`}
               showSlots={showSlots}
               plate={d.plateRail}
               className="aspect-[4/5] w-full [&>img]:transition-transform [&>img]:duration-[900ms] [&>img]:ease-out group-hover:[&>img]:scale-[1.06]"
@@ -192,7 +217,7 @@ export function DestinationMosaic({ showSlots }: Slots) {
         {picks.map((d, i) => (
           <article key={d.id} className={`group relative ${spans[i]}`}>
             <PhotoField
-              brief={`${d.name}, ${d.region} — ${i === 0 ? 'wide establishing shot with room for an overlaid caption' : 'mid shot, single clear subject'}, natural light`}
+              brief={`${d.name}, ${d.region}. ${i === 0 ? 'wide establishing shot with room for an overlaid caption' : 'mid shot, single clear subject'}, natural light`}
               showSlots={showSlots}
               plate={d.plateMosaic}
               className="absolute inset-0 h-full w-full [&>img]:transition-transform [&>img]:duration-[900ms] [&>img]:ease-out group-hover:[&>img]:scale-[1.06]"
@@ -209,6 +234,62 @@ export function DestinationMosaic({ showSlots }: Slots) {
             </div>
           </article>
         ))}
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Nicknames. What the country has been called, and by whom.
+
+   These are the names people actually reach for when they talk about Lebanon,
+   and the site had none of them anywhere. Each is given with the reason it was
+   coined and, where it matters, the tense it belongs in: "Switzerland of the
+   Middle East" is a pre-1975 phrase, and presenting it as current would be a
+   tourism brochure lying to a reader who can check.
+   ────────────────────────────────────────────────────────────────────── */
+export function Nicknames() {
+  const { tr } = useSite();
+
+  const names = [
+    { key: 'swiss', era: 'c. 1950 – 1975' },
+    { key: 'paris', era: 'c. 1950 – 1975' },
+    { key: 'pearl', era: 'Still used' },
+    { key: 'cedar', era: 'On the flag since 1943' },
+  ];
+
+  return (
+    <section className="border-y border-ink-ghost bg-band px-5 py-16 md:px-10 md:py-24">
+      <div className="grid gap-10 md:grid-cols-12 md:gap-14">
+        <div className="md:col-span-4">
+          <Reveal
+            as="p"
+            mode="words"
+            className="max-w-[15ch] font-display text-[clamp(1.5rem,3vw,2.5rem)] font-medium uppercase leading-[1.06] text-ink"
+          >
+            {tr('names.title')}
+          </Reveal>
+          <p className="mt-5 max-w-[38ch] text-sm leading-relaxed text-ink-dim">
+            {tr('names.lede')}
+          </p>
+        </div>
+
+        <div className="md:col-span-8">
+          {names.map((n) => (
+            <div
+              key={n.key}
+              className="grid gap-2 border-t border-ink-ghost py-6 last:border-b md:grid-cols-12 md:gap-6"
+            >
+              <p className="font-display text-lg uppercase tracking-wide text-ink md:col-span-5 md:text-xl">
+                {tr(`names.${n.key}.name`)}
+              </p>
+              <p className="micro text-ink-dim md:col-span-2">{n.era}</p>
+              <p className="max-w-[46ch] text-sm leading-relaxed text-ink-dim md:col-span-5">
+                {tr(`names.${n.key}.why`)}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -258,28 +339,34 @@ export function SecretsList({ showSlots }: Slots) {
 
   return (
     <section className="bg-ground px-5 py-20 md:px-10 md:py-28">
+      {/* Two columns, not three. As 3 + 4 + 5 the middle column held only a
+          heading and two lines, so everything below them was a tall empty
+          rectangle sitting between the photograph and the list. Heading, lede
+          and photograph now stack in one column that fills its own height, and
+          the list takes the other. */}
       <div className="grid gap-10 md:grid-cols-12 md:gap-14">
-        {/* pga-resort-full-scroll pairs its numbered accordion with an image
-            rather than letting the list stand alone on the page. */}
-        <div className="md:col-span-3">
-          <PhotoField
-            brief="The unfinished megalith in the Baalbek quarry, portrait, a person at its base for scale, hard noon light"
-            showSlots={showSlots}
-            plate="F1"
-            className="aspect-[3/4] w-full md:aspect-[2/3]"
-            variant="high"
-          />
-        </div>
-        <div className="md:col-span-4">
+        <div className="md:col-span-5">
           <Reveal as="p" mode="words" className="max-w-[16ch] font-display text-[clamp(1.5rem,3vw,2.5rem)] font-medium uppercase leading-[1.06] text-ink">
             {tr('secrets.title')}
           </Reveal>
-          <p className="mt-5 max-w-[36ch] text-sm leading-relaxed text-ink-dim">
+          <p className="mt-5 max-w-[38ch] text-sm leading-relaxed text-ink-dim">
             {tr('secrets.lede')}
+          </p>
+          {/* pga-resort-full-scroll pairs its numbered accordion with an image
+              rather than letting the list stand alone on the page. */}
+          <PhotoField
+            brief="The unfinished megalith in the Baalbek quarry, a person at its base for scale, warm low sun"
+            showSlots={showSlots}
+            plate="F1"
+            className="mt-8 aspect-[4/3] w-full md:mt-10 md:aspect-[3/2]"
+            variant="high"
+          />
+          <p className="micro mt-4 max-w-[34ch] leading-[1.7] text-ink-dim">
+            {tr('secrets.caption')}
           </p>
         </div>
 
-        <div className="md:col-span-5">
+        <div className="md:col-span-7">
           {secrets.map((s, i) => {
             const isOpen = open === i;
             return (
@@ -399,7 +486,7 @@ export function ClosingCTA({ showSlots }: Slots) {
         className="absolute inset-0"
         variant="low"
       />
-      <div className="scrim relative flex min-h-[72svh] flex-col justify-end p-5 md:p-10">
+      <div className="scrim scrim-deep relative flex min-h-[72svh] flex-col justify-end p-5 md:p-10">
         <Crosshair className="mb-6 text-hero-ink-dim" />
         <Reveal as="p" mode="words" className="max-w-[15ch] font-display text-[clamp(2.25rem,6.4vw,4.75rem)] font-bold uppercase leading-[0.94] tracking-[-0.025em] text-hero-ink">
           {tc('cta.line')}
