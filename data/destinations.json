@@ -1,0 +1,98 @@
+﻿[
+  {
+    "id": "byblos",
+    "name": "Byblos",
+    "localName": "Jbeil",
+    "arabic": "جبيل",
+    "region": "Coast",
+    "category": "ruins",
+    "index": "01",
+    "note": "Lived in for roughly seven thousand years, and still a working fishing harbour.",
+    "plateRail": "C1",
+    "plateMosaic": "C1"
+  },
+  {
+    "id": "baalbek",
+    "name": "Baalbek",
+    "localName": "Baalbek",
+    "arabic": "بعلبك",
+    "region": "Bekaa",
+    "category": "ruins",
+    "index": "02",
+    "note": "The Temple of Jupiter sits on three foundation blocks of about eight hundred tonnes each.",
+    "plateRail": "C2",
+    "plateMosaic": "C2"
+  },
+  {
+    "id": "jeita",
+    "name": "Jeita Grotto",
+    "localName": "Jeita",
+    "arabic": "مغارة جعيتا",
+    "region": "Mount Lebanon",
+    "category": "nature",
+    "index": "03",
+    "note": "Nine kilometres of surveyed limestone galleries on two levels, one of them navigated by boat.",
+    "plateRail": "C3",
+    "plateMosaic": "C3"
+  },
+  {
+    "id": "cedars",
+    "name": "The Cedars of God",
+    "localName": "Horsh Arz el-Rab",
+    "arabic": "أرز الربّ",
+    "region": "North",
+    "category": "mountains",
+    "index": "04",
+    "note": "A surviving grove at roughly two thousand metres, with trees over a thousand years old.",
+    "plateRail": "C4",
+    "plateMosaic": "C4"
+  },
+  {
+    "id": "qadisha",
+    "name": "Qadisha Valley",
+    "localName": "Wadi Qadisha",
+    "arabic": "وادي قاديشا",
+    "region": "North",
+    "category": "nature",
+    "index": "05",
+    "note": "Monks cut hermitages into the cliff faces here and stayed for centuries.",
+    "plateRail": "C5",
+    "plateMosaic": "C5"
+  },
+  {
+    "id": "tyre",
+    "name": "Tyre",
+    "localName": "Sour",
+    "arabic": "صور",
+    "region": "South",
+    "category": "ruins",
+    "index": "06",
+    "note": "The Roman hippodrome on the edge of town held tens of thousands for chariot racing.",
+    "plateRail": "J6",
+    "plateMosaic": "J6"
+  },
+  {
+    "id": "beirut",
+    "name": "Beirut",
+    "localName": "Beirut",
+    "arabic": "بيروت",
+    "region": "Coast",
+    "category": "city",
+    "index": "07",
+    "note": "Rebuilt after each of the seven times it was destroyed, which is how the city argues with itself.",
+    "plateRail": "J7",
+    "plateMosaic": "J7"
+  },
+  {
+    "id": "batroun",
+    "name": "Batroun",
+    "localName": "Batroun",
+    "arabic": "البترون",
+    "region": "Coast",
+    "category": "coast",
+    "index": "08",
+    "note": "A Phoenician sea wall still takes the swell off the old harbour.",
+    "plateRail": "J8",
+    "plateMosaic": "J8"
+  }
+]

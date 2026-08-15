@@ -1,0 +1,46 @@
+[
+  {
+    "id": "p1",
+    "author": "Rania K.",
+    "handle": "@raniawalks",
+    "place": "Qadisha Valley",
+    "caption": "Took the long path down from Bsharri. Three hours, one monastery cut into the cliff, and a man who insisted I take his thermos.",
+    "likes": 214,
+    "comments": 18,
+    "imageBrief": "Hiker on a narrow cliff path above the Qadisha gorge, monastery visible in the rock face behind, late morning shade",
+    "plate": "D1"
+  },
+  {
+    "id": "p2",
+    "author": "Marc H.",
+    "handle": "@marc.hadad",
+    "place": "Batroun",
+    "caption": "The lemonade stand everyone tells you about is real and it is worth the queue.",
+    "likes": 402,
+    "comments": 44,
+    "imageBrief": "Glass of cloudy fresh lemonade on a worn wooden counter, Batroun old souk in soft focus behind, warm afternoon",
+    "plate": "D2"
+  },
+  {
+    "id": "p3",
+    "author": "Yara S.",
+    "handle": "@yarasees",
+    "place": "Tyre",
+    "caption": "Hippodrome at seven in the morning, completely empty. Two thousand years of chariot racing and one stray cat.",
+    "likes": 158,
+    "comments": 9,
+    "imageBrief": "Empty Roman hippodrome at Tyre at sunrise, long stone spine receding, one cat on the track, low golden light",
+    "plate": "D3"
+  },
+  {
+    "id": "p4",
+    "author": "Elias N.",
+    "handle": "@eliasn",
+    "place": "Beirut",
+    "caption": "Sunset from the Corniche. Half the city is out walking and someone is always selling corn.",
+    "likes": 671,
+    "comments": 63,
+    "imageBrief": "Beirut Corniche at sunset crowded with walkers, Raouche sea stacks silhouetted in the distance, warm rose sky",
+    "plate": "D4"
+  }
+]

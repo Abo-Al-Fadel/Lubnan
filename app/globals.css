@@ -1,0 +1,648 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================================
+   Lubnān — "Behind the Cedar" landing pages
+   One direction (type-subject-occlusion), five palettes.
+
+   Every colour is a named token. A raw hex inside a component is a bug.
+   Palettes derive from: warm · cool · gentle · sunset · beach · cedar ·
+   Raouche Rock.
+
+   Contrast is computed, not eyeballed — the previous round shipped white type
+   at 2.54:1 over the light end of a placeholder field. Every --ink here clears
+   4.5:1 on its own --ground, and text over a photograph sits on a scrim.
+   ========================================================================= */
+
+@layer base {
+  :root {
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+    --space-12: 3rem;
+    --space-16: 4rem;
+    --space-24: 6rem;
+
+    --micro-size: 0.625rem;
+    --micro-tracking: 0.22em;
+
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+    --dur-fast: 180ms;
+    --dur-mid: 420ms;
+    --dur-slow: 900ms;
+
+    --font-display: var(--font-oswald);
+    --font-body: var(--font-archivo);
+
+    --ground: #3f4a47;
+    --band: #333d3a;
+    --ink: #f1ede1;
+    --ink-dim: rgba(241, 237, 225, 0.62);
+    --ink-ghost: rgba(241, 237, 225, 0.2);
+    --subject: #202a28;
+    --photo-a: #55665f;
+    --photo-b: #7d8d85;
+    --photo-c: #2b3733;
+    --scrim: rgba(20, 26, 24, 0.62);
+    /* The strong end of the same scrim, for blocks that carry a paragraph on
+       a photograph rather than a few large words. Darker *and* more opaque —
+       raising alpha alone stops helping once the plate is a bright sky. */
+    --scrim-strong: rgba(12, 17, 15, 0.82);
+    --accent: #d89a4f;
+    --accent-ink: #1c2528;
+    --hero-ink: #f1ede1;
+    --hero-ink-dim: rgba(241, 237, 225, 0.62);
+    --hero-ink-ghost: rgba(241, 237, 225, 0.2);
+    --btn-solid: #f6f8f6;
+    --btn-solid-ink: #12171a;
+  }
+
+  /* ── A · Raouche ─────────────────────────────────────────────────────
+     beach · Raouche Rock · cool. Beirut's sea stacks at midday: bright
+     cool water against bleached limestone. The coolest of the five.
+     ink #F0EDE1 on ground #2E5A66 = 6.5:1
+     ------------------------------------------------------------------ */
+  [data-palette='raouche'] {
+    --ground: #2e5a66;
+    --band: #24484f;
+    --ink: #f0ede1;
+    --ink-dim: rgba(240, 237, 225, 0.66);
+    --ink-ghost: rgba(240, 237, 225, 0.2);
+    --subject: #16333b;
+    --photo-a: #3d7180;
+    --photo-b: #86a9ab;
+    --photo-c: #17333c;
+    --scrim: rgba(12, 34, 40, 0.66);
+    --scrim-strong: rgba(6, 22, 27, 0.82);
+    /* Warm sun off limestone, against the cool water. */
+    --accent: #e8a34c;
+    --accent-ink: #16333b;
+    --hero-ink: #f0ede1;
+    --hero-ink-dim: rgba(240, 237, 225, 0.66);
+    --hero-ink-ghost: rgba(240, 237, 225, 0.2);
+    --btn-solid: #f6f3e8;
+    --btn-solid-ink: #10262c;
+  }
+
+  /* ── Cedar · snow ────────────────────────────────────────────────────
+     Rebuilt light. The flat slate ground was what made the page read cold and
+     sad — the hero barely shows its ground (the photograph covers it), so the
+     colour you were reacting to was every section *below* the hero.
+     Now those sections are snow off-white with near-black ink, and the accent
+     is Raouche's teal, so the two variations share a family.
+     The hero keeps light type over the photograph via the --hero-* tokens;
+     haven-design-with-ease and faipy-dark-type-on-sky both set near-black type
+     straight onto a pale sky, which is the register the snowy plate wants.
+     ink #1B2124 on ground #E9EBE8 = 13.4:1
+     ------------------------------------------------------------------ */
+  [data-palette='cedar'] {
+    --ground: #e9ebe8;
+    --band: #f5f6f4;
+    --ink: #1b2124;
+    --ink-dim: rgba(27, 33, 36, 0.6);
+    --ink-ghost: rgba(27, 33, 36, 0.14);
+    --subject: #1c2528;
+    --photo-a: #b3bdbd;
+    --photo-b: #dde2e0;
+    --photo-c: #76858a;
+    --scrim: rgba(16, 22, 24, 0.6);
+    --scrim-strong: rgba(9, 13, 15, 0.82);
+    /* Raouche's sea teal, so the two variations read as one family. */
+    --accent: #2e5a66;
+    --accent-ink: #ffffff;
+    /* Hero type sits on the photograph, not on the page ground.
+       Eggshell, borrowed from Raouche, not the cool #F3F5F3 this used to be.
+       Pure white on a cold slate photograph reads as a screen element printed
+       over the picture; a warm off-white reads as light in the same scene.
+       Still 14.9:1 on the scrim, so nothing is traded for it. */
+    --hero-ink: #f0ede1;
+    --hero-ink-dim: rgba(240, 237, 225, 0.68);
+    --hero-ink-ghost: rgba(240, 237, 225, 0.24);
+    /* Primary action sitting on a photograph: solid eggshell with a near-black
+       label so it reads on any frame, and it flips to the accent on hover
+       rather than only lifting. */
+    --btn-solid: #f0ede1;
+    --btn-solid-ink: #12171a;
+  }
+
+  /* ── Gentle · held back, not deleted ─────────────────────────────────
+     Retired as a hero palette in the cut to three, but kept because a pale
+     ground is the right surface for the long-text pages — Story, Plan Your
+     Trip — where a dark ground fights sustained reading. Pair it with
+     whichever hero palette wins rather than treating it as a rival.
+     ink #26302C on ground #DCE2DE = 10.0:1
+     ------------------------------------------------------------------ */
+  [data-palette='gentle'] {
+    --ground: #dce2de;
+    --band: #eef1ee;
+    --ink: #26302c;
+    --ink-dim: rgba(38, 48, 44, 0.62);
+    --ink-ghost: rgba(38, 48, 44, 0.16);
+    --subject: #3e4f49;
+    --photo-a: #a9bab4;
+    --photo-b: #cdd8d3;
+    --photo-c: #6d817a;
+    /* Gentle's scrim is *light* — it washes a photograph toward the pale
+       ground rather than darkening it. That was fine while this was a
+       text-only reading palette, but the moment it carried a photographic
+       banner it inherited the eggshell --hero-ink from :root and rendered
+       light type on a lightened plate: the /plan wordmark measured 1.55:1.
+
+       So Gentle inverts the hero relationship deliberately — dark type on a
+       bleached plate — which also gives the reading pages a hero treatment
+       visibly distinct from Cedar's dark-scrim-and-eggshell. */
+    --scrim: rgba(220, 226, 222, 0.72);
+    /* Light, like the rest of Gentle: this palette bleaches a plate toward the
+       page ground instead of darkening it, and its hero ink is dark. */
+    --scrim-strong: rgba(232, 237, 233, 0.9);
+    --accent: #b8763a;
+    --accent-ink: #ffffff;
+    --hero-ink: #1e2a26;
+    --hero-ink-dim: rgba(30, 42, 38, 0.66);
+    --hero-ink-ghost: rgba(30, 42, 38, 0.2);
+    --btn-solid: #26302c;
+    --btn-solid-ink: #eef1ee;
+  }
+
+  /* ── Theme toggle ────────────────────────────────────────────────────
+     Each palette ships both a light and a dark treatment rather than one
+     being an inversion of the other: inverting a palette produces muddy
+     mid-tones, so the counterpart grounds are picked, not computed. The
+     photographic tokens barely move — the plates are the same photographs in
+     both themes, and re-tinting them would misrepresent the images.
+     ------------------------------------------------------------------ */
+  [data-theme='dark'] [data-palette='cedar'] {
+    --ground: #191f22;
+    --band: #12171a;
+    /* Warmed to match the hero eggshell — in dark mode the page ink *is* the
+       light type, so leaving it cool split the page into two whites. */
+    --ink: #ede8dc;
+    --ink-dim: rgba(237, 232, 220, 0.62);
+    --ink-ghost: rgba(237, 232, 220, 0.18);
+    --accent: #7fb6c4;
+    --accent-ink: #12171a;
+  }
+
+  [data-theme='light'] [data-palette='raouche'] {
+    --ground: #eaf1f2;
+    --band: #f6fafa;
+    --ink: #102c34;
+    --ink-dim: rgba(16, 44, 52, 0.62);
+    --ink-ghost: rgba(16, 44, 52, 0.15);
+    --accent: #b06a1f;
+    --accent-ink: #ffffff;
+  }
+
+  html,
+  body {
+    overflow-x: clip;
+  }
+
+  body {
+    background: #141615;
+    color: var(--ink);
+    font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* impeccable: theme the surfaces you did not draw. */
+  ::selection {
+    background: var(--ink);
+    color: var(--ground);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 3px;
+    border-radius: 1px;
+  }
+
+  * {
+    scrollbar-color: var(--ink-ghost) transparent;
+    scrollbar-width: thin;
+  }
+}
+
+@layer components {
+  .micro {
+    font-family: var(--font-body), sans-serif;
+    font-size: var(--micro-size);
+    letter-spacing: var(--micro-tracking);
+    text-transform: uppercase;
+    font-weight: 500;
+    line-height: 1;
+  }
+
+  .figures {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  /* For blocks that put a *paragraph* on a photograph rather than a wordmark.
+     The standard scrim is tuned for a few large words and leaves body copy at
+     1.7–2.5:1 over a bright plate — a golden-hour sunset behind 14px type is
+     the worst case and it is exactly what the Story panels are full of. This
+     carries the dark end of the frame much further up the block. */
+  /* `.scrim.scrim-deep`, not `.scrim-deep`. A single-class selector ties with
+     `.scrim::before` and then source order decides — and this block sits
+     above it, so the plain scrim silently won and the deep one did nothing.
+     The doubled selector wins on specificity regardless of where it lives. */
+  .scrim.scrim-deep::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      to top,
+      var(--scrim-strong) 0%,
+      var(--scrim-strong) 44%,
+      color-mix(in srgb, var(--scrim-strong) 78%, transparent) 68%,
+      color-mix(in srgb, var(--scrim-strong) 42%, transparent) 86%,
+      color-mix(in srgb, var(--scrim-strong) 18%, transparent) 100%
+    );
+  }
+
+  /* For heroes whose type holds one side and whose imagery holds the other —
+     Explore puts the copy left and the drawn map right, so a bottom-up ramp
+     lands in the wrong place. */
+  .scrim.scrim-left::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      to right,
+      var(--scrim-strong) 0%,
+      color-mix(in srgb, var(--scrim-strong) 88%, transparent) 38%,
+      color-mix(in srgb, var(--scrim-strong) 56%, transparent) 60%,
+      color-mix(in srgb, var(--scrim-strong) 28%, transparent) 80%,
+      color-mix(in srgb, var(--scrim-strong) 16%, transparent) 100%
+    );
+  }
+
+  /* Any type sitting on a photograph gets this. It models the dark end of
+     the frame rather than dimming the whole image, and it is the fix for
+     the 2.54:1 headline in the previous round. */
+  .scrim::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      /* Foot: carries the wordmark and the stat bar. */
+      linear-gradient(
+          to top,
+          var(--scrim) 0%,
+          color-mix(in srgb, var(--scrim) 55%, transparent) 34%,
+          transparent 68%
+        ),
+      /* Head: carries the nav and the standfirst. Lighter, and it only has to
+         survive a bright overcast sky, which is exactly where the real plates
+         put their highest values. */
+        linear-gradient(
+          to bottom,
+          color-mix(in srgb, var(--scrim) 78%, transparent) 0%,
+          color-mix(in srgb, var(--scrim) 30%, transparent) 18%,
+          transparent 38%
+        );
+  }
+}
+
+.grain::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.4;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+}
+
+@keyframes lift {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+
+/* Per-word headline reveal. logistics-curtain-wipe-scroll: ~60ms stagger,
+   firm ease-out, 300–500ms. wealth-word-blur-and-scale: blur-to-sharp reads
+   softer than a fade and much softer than a slide. */
+@keyframes word-in {
+  from {
+    opacity: 0;
+    filter: blur(9px);
+    transform: translateY(0.32em);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+}
+
+/* The outer span is a plain inline wrapper carrying the trailing space; only
+   the inner span animates, so whitespace between words survives. */
+.word-in > span > span {
+  display: inline-block;
+  animation: word-in 620ms var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 62ms);
+}
+
+@keyframes rule-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.anim-lift {
+  animation: lift var(--dur-slow) var(--ease-out) both;
+}
+
+.anim-rule-x {
+  transform-origin: left center;
+  animation: rule-x var(--dur-slow) var(--ease-out) both;
+}
+
+.rail {
+  scrollbar-width: none;
+}
+.rail::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Page transitions ───────────────────────────────────────────────────
+   View Transitions give a real cross-fade between routes without a
+   client-side animation library, and degrade to an instant swap where the
+   API is absent. The named elements are the ones that persist across every
+   route — they morph rather than fade, so the wordmark and the hero plate
+   stay continuous while the content beneath them changes. That continuity is
+   the whole point: pages should feel like moving inside one place.
+   ------------------------------------------------------------------- */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root) {
+  animation: vt-out 260ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+::view-transition-new(root) {
+  animation: vt-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes vt-out {
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes vt-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+.vt-wordmark {
+  view-transition-name: wordmark;
+}
+
+.vt-hero {
+  view-transition-name: hero-plate;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Page-load sequence: the hero's own elements arrive in order rather than
+   all at once. One authored moment, then the page is still. */
+@keyframes hero-plate-in {
+  from {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.anim-plate {
+  animation: hero-plate-in 1100ms var(--ease-out) both;
+}
+
+@keyframes subject-rise {
+  from {
+    opacity: 0;
+    transform: translateY(4%);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Applied to an *inner* wrapper, never to the element that carries the
+   centering transform. `to { transform: none }` with fill-mode `both` stays
+   applied forever, so putting this on the positioned element silently erased
+   its `-translate-x-1/2` — the cedar hung by its left edge at 41% instead of
+   its centre and landed a third of a frame to the right, on top of the end of
+   the wordmark. One transform per element. */
+.anim-subject {
+  animation: subject-rise 900ms var(--ease-out) 260ms both;
+}
+
+/* The page's one primary button. Fill and label both swap on hover, which is
+   what makes the state legible on a photograph — a lift alone is invisible
+   against moving or busy imagery. Written here rather than as Tailwind
+   utilities because `hover:bg-[var(--accent)]` and friends are exactly the
+   var()-with-modifier pattern that silently compiles to nothing. */
+.btn-solid {
+  background: var(--btn-solid);
+  color: var(--btn-solid-ink);
+}
+
+.btn-solid:hover,
+.btn-solid:focus-visible {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* ── Drawn map ─────────────────────────────────────────────────────────────
+   The border strokes itself on. The paths carry pathLength="1" as an SVG
+   attribute (it is not a CSS property), which normalises every outline to a
+   length of 1 so this single dash rule drives paths of very different real
+   lengths. */
+.map-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+
+.map-draw--border {
+  animation: map-stroke 1500ms var(--ease-out) 120ms forwards;
+}
+
+.map-draw--coast {
+  animation: map-stroke 1700ms var(--ease-out) 320ms forwards;
+}
+
+@keyframes map-stroke {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.map-fade {
+  transition: opacity 900ms var(--ease-out) 700ms;
+}
+
+.map-pin {
+  transition: opacity 520ms var(--ease-out);
+}
+
+.map-pin[role='button'] {
+  cursor: pointer;
+}
+
+.map-pin[role='button']:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-draw {
+    stroke-dashoffset: 0;
+    animation: none;
+  }
+}
+
+/* ── Seam ──────────────────────────────────────────────────────────────────
+   The dissolve between the hero plate and the page ground below it.
+
+   Two techniques stacked:
+
+   1. PROGRESSIVE BLUR. Three backdrop-filter layers, each masked to start
+      lower than the last and each with a larger radius, so the photograph
+      loses focus in a ramp instead of in one visible step. A single blur layer
+      always shows its own top edge as a line — which is the exact problem this
+      is here to solve.
+
+   2. COLOUR BLEED on an S-curve. Nine stops, not two. A two-stop gradient over
+      160px at this contrast bands visibly (Mach banding — the eye manufactures
+      edges out of a linear ramp), and the banding is worse than the hard seam
+      it replaces. The stops ease in slowly, run fast through the middle and
+      settle slowly into the ground.
+
+   Together the trade name for this is a *feathered seam*: the boundary is
+   softened until it has no edge. The blur half is a progressive or
+   "graduated" blur; the colour half is a gradient bleed. In film the same
+   move between two shots is a cross-dissolve.
+   -------------------------------------------------------------------------- */
+.seam {
+  position: relative;
+}
+
+.seam-blur {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.seam-blur-1 {
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 34%);
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 34%);
+}
+
+.seam-blur-2 {
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 28%, #000 66%);
+  mask-image: linear-gradient(to bottom, transparent 28%, #000 66%);
+}
+
+.seam-blur-3 {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 58%, #000 92%);
+  mask-image: linear-gradient(to bottom, transparent 58%, #000 92%);
+}
+
+.seam-bleed {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--ground) 0%, transparent) 0%,
+    color-mix(in srgb, var(--ground) 3%, transparent) 12%,
+    color-mix(in srgb, var(--ground) 10%, transparent) 24%,
+    color-mix(in srgb, var(--ground) 22%, transparent) 36%,
+    color-mix(in srgb, var(--ground) 40%, transparent) 48%,
+    color-mix(in srgb, var(--ground) 60%, transparent) 60%,
+    color-mix(in srgb, var(--ground) 78%, transparent) 72%,
+    color-mix(in srgb, var(--ground) 91%, transparent) 82%,
+    color-mix(in srgb, var(--ground) 98%, transparent) 92%,
+    var(--ground) 100%
+  );
+}
+
+/* The wordmark wipes up from its own baseline, so it reads as being revealed
+   by the frame rather than sliding in from somewhere off-screen.
+
+   The insets are negative on three sides, and that is load-bearing. `inset(0…)`
+   clips to the *border box*, which for this span is one line box — and the line
+   box is `leading-[0.8]` while Oswald's em box is ~1.48em. The glyphs overflow
+   it by roughly 43% of its height above and below, so clipping to zero sheared
+   the macron off Ā entirely and cut the flat bottoms off every letter. The
+   ratio is font-size-independent, so one set of percentages holds at every
+   viewport. Only the bottom animates; it is the wipe. */
+@keyframes word-mask {
+  from {
+    clip-path: inset(-55% -5% 100% -5%);
+  }
+  to {
+    clip-path: inset(-55% -5% -55% -5%);
+  }
+}
+
+.anim-word {
+  animation: word-mask 1000ms var(--ease-out) 140ms both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
