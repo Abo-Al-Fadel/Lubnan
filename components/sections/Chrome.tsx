@@ -48,8 +48,19 @@ function LanguageSwitch({ tone = 'hero' }: { tone?: 'hero' | 'page' }) {
             onClick={() => setLocale(l.code)}
             aria-pressed={active}
             title={l.native}
-            className={`micro rounded-full px-2.5 py-1.5 transition-colors duration-200 ease-out ${
-              active ? 'bg-accent text-[color:var(--accent-ink)]' : `${dim} ${hover}`
+            /* --nav-accent, not --accent. The palette accent is Gentle's
+               ochre on Legacy and Plan and the teal everywhere else, so the
+               active language pill changed colour from page to page. Chrome
+               that persists across navigation has to be palette-independent
+               or it reads as a rendering fault. */
+            /* min-h/min-w 40px. At px-2.5 py-1.5 these measured under 24px in
+               both directions, which is below every published minimum for a
+               touch target and was the single most repeated finding in the
+               crawl. The visual size is unchanged; the hit area is not. */
+            className={`micro flex min-h-[40px] min-w-[40px] items-center justify-center rounded-full px-2.5 transition-colors duration-200 ease-out ${
+              active
+                ? 'bg-[color:var(--nav-accent)] text-[color:var(--nav-accent-ink)]'
+                : `${dim} ${hover}`
             }`}
           >
             {l.label}
@@ -71,7 +82,7 @@ function ThemeToggle({ tone = 'hero' }: { tone?: 'hero' | 'page' }) {
       onClick={toggleTheme}
       title={tr('nav.theme')}
       aria-label={tr('nav.theme')}
-      className={`flex h-9 w-9 items-center justify-center rounded-full border ${ring} ${ink} transition-colors duration-200 ease-out hover:border-accent hover:bg-accent hover:text-[color:var(--accent-ink)]`}
+      className={`flex h-9 w-9 items-center justify-center rounded-full border ${ring} ${ink} transition-colors duration-200 ease-out hover:border-[color:var(--nav-accent)] hover:bg-[color:var(--nav-accent)] hover:text-[color:var(--nav-accent-ink)]`}
     >
       {theme === 'light' ? <Moon /> : <Sun />}
     </button>
@@ -179,7 +190,7 @@ export function Navbar() {
               vanished into its own button. */}
           <a
             href="/login"
-            className={`micro rounded-full border ${ring} px-4 py-2.5 ${ink} transition-colors duration-300 ease-out hover:border-accent hover:bg-accent hover:text-[color:var(--accent-ink)]`}
+            className={`micro rounded-full border ${ring} px-4 py-2.5 ${ink} transition-colors duration-300 ease-out hover:border-[color:var(--nav-accent)] hover:bg-[color:var(--nav-accent)] hover:text-[color:var(--nav-accent-ink)]`}
           >
             {tr('nav.login')}
           </a>
@@ -231,7 +242,7 @@ export function Navbar() {
               <ThemeToggle tone={tone} />
               <a
                 href="/login"
-                className={`micro rounded-full border ${ring} px-4 py-2.5 ${ink} transition-colors duration-300 ease-out hover:border-accent hover:bg-accent hover:text-[color:var(--accent-ink)]`}
+                className={`micro rounded-full border ${ring} px-4 py-2.5 ${ink} transition-colors duration-300 ease-out hover:border-[color:var(--nav-accent)] hover:bg-[color:var(--nav-accent)] hover:text-[color:var(--nav-accent-ink)]`}
               >
                 {tr('nav.login')}
               </a>
@@ -255,9 +266,9 @@ export function SiteFooter() {
       links: [
         ['footer.coast', '/explore?region=Coast'],
         ['footer.mountains', '/explore?region=Mount+Lebanon'],
-        ['footer.ruins', '/explore?category=ruins'],
-        ['footer.food', '/explore?category=city'],
-        ['footer.wine', '/explore?region=Bekaa'],
+        ['footer.ruins', '/explore?region=South'],
+        ['footer.north', '/explore?region=North'],
+        ['footer.bekaa', '/explore?region=Bekaa'],
       ],
     },
     {
@@ -282,11 +293,13 @@ export function SiteFooter() {
     },
   ];
 
+  /* Real destinations. These were all href="#", which is a link that announces
+     itself to a screen reader and then does nothing. */
   const social = [
-    { name: 'Instagram', Icon: Instagram },
-    { name: 'YouTube', Icon: YouTube },
-    { name: 'Facebook', Icon: Facebook },
-    { name: 'X', Icon: X },
+    { name: 'Instagram', Icon: Instagram, href: 'https://www.instagram.com/explore/tags/lebanon/' },
+    { name: 'YouTube', Icon: YouTube, href: 'https://www.youtube.com/results?search_query=lebanon+travel' },
+    { name: 'Facebook', Icon: Facebook, href: 'https://www.facebook.com/search/top?q=lebanon%20travel' },
+    { name: 'X', Icon: X, href: 'https://x.com/search?q=lebanon%20travel' },
   ];
 
   return (
@@ -304,7 +317,7 @@ export function SiteFooter() {
 
         {cols.map((c) => (
           <div key={c.head} className="md:col-span-2">
-            <a href={c.href} className="micro text-ink-dim transition-colors hover:text-accent">
+            <a href={c.href} className="micro tap inline-block text-ink-dim transition-colors hover:text-accent">
               {tr(c.head)}
             </a>
             <ul className="mt-4 space-y-2.5">
@@ -312,7 +325,7 @@ export function SiteFooter() {
                 <li key={key}>
                   <a
                     href={href}
-                    className="text-sm text-ink transition-colors duration-200 ease-out hover:text-accent"
+                    className="tap inline-block text-sm text-ink transition-colors duration-200 ease-out hover:text-accent"
                   >
                     {tr(key)}
                   </a>
@@ -325,11 +338,16 @@ export function SiteFooter() {
         <div className="md:col-span-2">
           <p className="micro text-ink-dim">{tr('footer.elsewhere')}</p>
           <ul className="mt-4 space-y-2.5">
-            {social.map(({ name, Icon }) => (
+            {social.map(({ name, Icon, href }) => (
               <li key={name}>
                 <a
-                  href="#"
-                  className="group flex items-center gap-2.5 text-sm text-ink transition-colors duration-200 ease-out hover:text-accent"
+                  href={href}
+                  target="_blank"
+                  /* noreferrer as well as noopener: without it the destination
+                     receives this page's URL, and an external link opening in a
+                     new tab can reach back through window.opener. */
+                  rel="noopener noreferrer"
+                  className="tap group flex items-center gap-2.5 text-sm text-ink transition-colors duration-200 ease-out hover:text-accent"
                 >
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-ink-ghost transition-colors duration-200 ease-out group-hover:border-accent">
                     <Icon />

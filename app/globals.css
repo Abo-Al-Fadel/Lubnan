@@ -54,6 +54,8 @@
     --scrim-strong: rgba(12, 17, 15, 0.82);
     --accent: #d89a4f;
     --accent-ink: #1c2528;
+    --nav-accent: #2e5a66;
+    --nav-accent-ink: #f0ede1;
     --hero-ink: #f1ede1;
     --hero-ink-dim: rgba(241, 237, 225, 0.62);
     --hero-ink-ghost: rgba(241, 237, 225, 0.2);
@@ -81,6 +83,8 @@
     /* Warm sun off limestone, against the cool water. */
     --accent: #e8a34c;
     --accent-ink: #16333b;
+    --nav-accent: #2e5a66;
+    --nav-accent-ink: #f0ede1;
     --hero-ink: #f0ede1;
     --hero-ink-dim: rgba(240, 237, 225, 0.66);
     --hero-ink-ghost: rgba(240, 237, 225, 0.2);
@@ -114,6 +118,8 @@
     /* Raouche's sea teal, so the two variations read as one family. */
     --accent: #2e5a66;
     --accent-ink: #ffffff;
+    --nav-accent: #2e5a66;
+    --nav-accent-ink: #f0ede1;
     /* Hero type sits on the photograph, not on the page ground.
        Eggshell, borrowed from Raouche, not the cool #F3F5F3 this used to be.
        Pure white on a cold slate photograph reads as a screen element printed
@@ -161,6 +167,8 @@
     --scrim-strong: rgba(232, 237, 233, 0.9);
     --accent: #b8763a;
     --accent-ink: #ffffff;
+    --nav-accent: #2e5a66;
+    --nav-accent-ink: #f0ede1;
     --hero-ink: #1e2a26;
     --hero-ink-dim: rgba(30, 42, 38, 0.66);
     --hero-ink-ghost: rgba(30, 42, 38, 0.2);
@@ -551,6 +559,56 @@ html {
 
 .map-fade {
   transition: opacity 900ms var(--ease-out) 700ms;
+}
+
+/* The halo behind waypoint labels. The map draws in `currentColor`, so it works
+   on a photograph *and* on a page ground; the halo has to flip the same way.
+   Default is the page ground, which is what a map on a light page needs; the
+   hero maps override it to the scrim. */
+/* Touch-target floor for small inline controls.
+   Applied where the crawl measured a link or button under 24px on a 390px
+   viewport: the visual size is unchanged, the hit area grows around it via a
+   pseudo-element so it does not disturb layout. */
+.tap {
+  position: relative;
+}
+
+.tap::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
+
+.map-halo {
+  --map-halo: var(--ground);
+}
+
+.scrim .map-halo,
+.scrim-deep .map-halo,
+.scrim-left /* Touch-target floor for small inline controls.
+   Applied where the crawl measured a link or button under 24px on a 390px
+   viewport: the visual size is unchanged, the hit area grows around it via a
+   pseudo-element so it does not disturb layout. */
+.tap {
+  position: relative;
+}
+
+.tap::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
+
+.map-halo {
+  --map-halo: var(--scrim-strong);
 }
 
 .map-pin {

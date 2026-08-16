@@ -125,7 +125,7 @@ export default function ProfilePage() {
               {savedPlaces.length === 0 ? (
                 <p className="max-w-[40ch] text-sm text-ink-dim">
                   {tr('profile.empty')}{' '}
-                  <a href="/explore" className="border-b border-ink pb-0.5 text-ink">
+                  <a href="/explore" className="tap border-b border-ink pb-0.5 text-ink">
                     {tr('nav.explore')}
                   </a>
                 </p>

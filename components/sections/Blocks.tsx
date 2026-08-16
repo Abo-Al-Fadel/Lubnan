@@ -206,8 +206,8 @@ export function DestinationMosaic({ showSlots }: Slots) {
           {tr('mosaic.title')}
         </Reveal>
         <a
-          href="#"
-          className="micro shrink-0 border-b border-ink pb-1 text-ink transition-opacity duration-200 ease-out hover:opacity-60"
+          href="/explore"
+          className="micro tap shrink-0 border-b border-ink pb-1 text-ink transition-opacity duration-200 ease-out hover:opacity-60"
         >
           {tr('mosaic.all')}
         </a>
@@ -423,8 +423,8 @@ export function CommunityStrip({ showSlots }: Slots) {
           {tr('community.title')}
         </Reveal>
         <a
-          href="#"
-          className="micro shrink-0 border-b border-ink pb-1 text-ink transition-opacity duration-200 ease-out hover:opacity-60"
+          href="/community"
+          className="micro tap shrink-0 border-b border-ink pb-1 text-ink transition-opacity duration-200 ease-out hover:opacity-60"
         >
           {tr('community.open')}
         </a>
@@ -454,7 +454,7 @@ export function CommunityStrip({ showSlots }: Slots) {
                   type="button"
                   onClick={() => setLiked((s) => ({ ...s, [p.id]: !s[p.id] }))}
                   aria-pressed={isLiked}
-                  className="micro figures flex items-center gap-2 transition-opacity duration-200 ease-out hover:opacity-70"
+                  className="micro figures tap flex min-h-[32px] items-center gap-2 transition-opacity duration-200 ease-out hover:opacity-70"
                   style={{ color: isLiked ? 'var(--accent)' : 'var(--ink-dim)' }}
                 >
                   <Heart filled={isLiked} />
@@ -493,7 +493,7 @@ export function ClosingCTA({ showSlots }: Slots) {
         </Reveal>
         <div className="mt-9 flex flex-wrap items-center gap-4">
           <a
-            href="#"
+            href="/plan"
             /* Primary action on a photograph, so it has to hold its own against
                whatever is behind it. Resting state is a solid eggshell pill
                with a near-black label — 16.6:1, reads on any frame. Hover
@@ -512,7 +512,7 @@ export function ClosingCTA({ showSlots }: Slots) {
             </span>
           </a>
           <a
-            href="#"
+            href="/plan#transfer"
             /* A bare underlined link sat on the bright half of the plate and
                went white-on-water. Given a ring and its own faint ground it
                reads at any crop, and it still stays clearly secondary to the

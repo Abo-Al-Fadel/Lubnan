@@ -58,17 +58,24 @@ export default function PlacePage({ params }: { params: { place: string } }) {
 
           <div className="scrim scrim-deep relative flex min-h-[86svh] flex-col justify-end px-5 pb-10 pt-32 text-hero-ink md:px-10 md:pb-14">
             <div className="relative flex-1">
-              <span
-                aria-hidden="true"
-                className="anim-word pointer-events-none absolute bottom-0 left-0 z-10 font-display text-[clamp(2.75rem,13vw,11rem)] font-bold uppercase leading-[0.82] tracking-[-0.015em] text-hero-ink"
-              >
+              {/* An h1, not a span. The place name is the page's heading and
+                  every place route was reporting zero h1 elements. It is also
+                  no longer aria-hidden, so the name is announced. */}
+              <h1 className="anim-word pointer-events-none absolute bottom-0 left-0 z-10 font-display text-[clamp(2.75rem,13vw,11rem)] font-bold uppercase leading-[0.82] tracking-[-0.015em] text-hero-ink">
                 {place.name}
-              </span>
-              <div className="anim-subject absolute bottom-[-2%] right-[4%] z-20 hidden md:block">
-                <HeroSubject
-                  variation={subjectVariation}
-                  className="h-[46svh] drop-shadow-[0_24px_50px_rgba(0,0,0,0.42)]"
-                />
+              </h1>
+              {/* Was `hidden md:block`, so every place page lost its subject
+                  on a phone. It is the page's signature element, so it now
+                  scales down instead of disappearing. Dropped lower as well:
+                  at -2% it floated clear of the baseline rather than standing
+                  on it. */}
+              <div className="absolute bottom-[-9%] right-[2%] z-20 sm:right-[4%]">
+                <div className="anim-subject">
+                  <HeroSubject
+                    variation={subjectVariation}
+                    className="h-[22svh] drop-shadow-[0_24px_50px_rgba(0,0,0,0.42)] sm:h-[32svh] md:h-[46svh]"
+                  />
+                </div>
               </div>
             </div>
 
@@ -141,7 +148,10 @@ export default function PlacePage({ params }: { params: { place: string } }) {
                 type="button"
                 onClick={() => setOpen(open === i ? null : i)}
                 aria-expanded={open === i}
-                className="absolute -translate-x-1/2 -translate-y-1/2"
+                /* The visible dot stays 14px; the button around it is 44px so
+                   it can actually be hit on a phone. Every callout on every
+                   place page was flagged for this. */
+                className="absolute flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center"
                 style={{ left: `${c.x * 100}%`, top: `${c.y * 100}%` }}
               >
                 <span className="sr-only">{c.label}</span>
@@ -249,7 +259,7 @@ export default function PlacePage({ params }: { params: { place: string } }) {
             </p>
             <a
               href="/explore"
-              className="micro shrink-0 border-b border-ink pb-1 text-ink transition-opacity hover:opacity-60"
+              className="micro tap shrink-0 border-b border-ink pb-1 text-ink transition-opacity hover:opacity-60"
             >
               {tr('mosaic.all')}
             </a>

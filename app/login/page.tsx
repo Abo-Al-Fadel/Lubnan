@@ -79,7 +79,7 @@ export default function LoginPage() {
                   setMode(mode === 'in' ? 'up' : 'in');
                   setSent(false);
                 }}
-                className="border-b border-ink pb-0.5 text-ink transition-opacity hover:opacity-60"
+                className="tap border-b border-ink pb-0.5 text-ink transition-opacity hover:opacity-60"
               >
                 {mode === 'in' ? tr('login.titleUp') : tr('login.titleIn')}
               </button>

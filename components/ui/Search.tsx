@@ -10,6 +10,8 @@ type Result = {
   title: string;
   meta: string;
   body: string;
+  /** Every result goes somewhere. They were all href="#". */
+  href: string;
 };
 
 const INDEX: Result[] = [
@@ -19,6 +21,7 @@ const INDEX: Result[] = [
     title: d.name,
     meta: `${d.region} · ${d.localName} · ${d.arabic}`,
     body: d.note,
+    href: `/explore/${d.id}`,
   })),
   ...secrets.map((s) => ({
     id: `secret-${s.index}`,
@@ -26,6 +29,7 @@ const INDEX: Result[] = [
     title: s.title,
     meta: `Secrets · ${s.index}`,
     body: s.body,
+    href: '/#secrets',
   })),
 ];
 
@@ -147,7 +151,8 @@ export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () =>
               {results.map((r) => (
                 <li key={r.id} className="border-b border-ink-ghost last:border-b-0">
                   <a
-                    href="#"
+                    href={r.href}
+                    onClick={onClose}
                     className="flex flex-col gap-1.5 px-5 py-4 transition-colors duration-200 ease-out hover:bg-ground"
                   >
                     <span className="flex items-baseline justify-between gap-3">

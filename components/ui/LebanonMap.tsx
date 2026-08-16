@@ -137,7 +137,7 @@ export function LebanonMap({
     <svg
       ref={ref}
       viewBox={`${-LABEL_ROOM} 0 ${W + LABEL_ROOM * 2} ${H}`}
-      className={className}
+      className={`map-halo ${className}`}
       role="img"
       aria-label="Map of Lebanon with the destinations marked"
     >
@@ -148,7 +148,7 @@ export function LebanonMap({
       </defs>
 
       {/* Land wash, so the country reads as a body and not just an edge. */}
-      <path d={border} fill="var(--hero-ink)" opacity={drawn ? 0.07 : 0} className="map-fade" />
+      <path d={border} fill="currentColor" opacity={drawn ? 0.07 : 0} className="map-fade" />
 
       {/* The mountain ranges used to be drawn here as two dashed strokes. They
           are gone: at a thin dash they read as a scattering of specks over the
@@ -162,7 +162,7 @@ export function LebanonMap({
         d={border}
         pathLength={1}
         fill="none"
-        stroke="var(--hero-ink)"
+        stroke="currentColor"
         strokeWidth={1}
         opacity={0.45}
         className={drawn ? 'map-draw map-draw--border' : 'map-draw'}
@@ -171,7 +171,7 @@ export function LebanonMap({
         d={coast}
         pathLength={1}
         fill="none"
-        stroke="var(--hero-ink)"
+        stroke="currentColor"
         strokeWidth={2}
         strokeLinecap="round"
         className={drawn ? 'map-draw map-draw--coast' : 'map-draw'}
@@ -204,7 +204,7 @@ export function LebanonMap({
             <path
               d={`M${x} ${y} H${right ? x + 14 : x - 14} V${labelY} H${right ? x + 26 : x - 26}`}
               fill="none"
-              stroke="var(--hero-ink)"
+              stroke="currentColor"
               strokeWidth={1}
               opacity={active ? 0.95 : 0.5}
             />
@@ -212,20 +212,20 @@ export function LebanonMap({
               cx={x}
               cy={y}
               r={active ? 5 : 3.2}
-              fill={active ? 'var(--accent)' : 'var(--hero-ink)'}
+              fill={active ? 'var(--accent)' : 'currentColor'}
             />
             <text
               x={right ? x + 32 : x - 32}
               y={labelY + 4}
               textAnchor={right ? 'start' : 'end'}
-              fill="var(--hero-ink)"
+              fill="currentColor"
               opacity={active ? 1 : 0.86}
               style={{
                 font: '500 12px var(--font-body), sans-serif',
                 letterSpacing: '0.1em',
                 textTransform: 'uppercase',
                 paintOrder: 'stroke',
-                stroke: 'var(--scrim-strong)',
+                stroke: 'var(--map-halo)',
                 strokeWidth: 3,
                 strokeLinejoin: 'round',
               }}

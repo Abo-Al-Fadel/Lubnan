@@ -140,7 +140,7 @@ export default function ExplorePage() {
                   <button
                     type="button"
                     onClick={() => setRegion(null)}
-                    className="micro border-b border-ink pb-1 text-ink transition-opacity hover:opacity-60"
+                    className="micro tap border-b border-ink pb-1 text-ink transition-opacity hover:opacity-60"
                   >
                     {tr('explore.clear')}
                   </button>

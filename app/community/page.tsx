@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useMemo, useState } from 'react';
 import { Navbar, SiteFooter } from '@/components/sections/Chrome';
@@ -80,6 +80,9 @@ export default function CommunityPage() {
       <Navbar />
 
       <main id="main" className="px-4 pb-24 pt-28 md:px-8 md:pt-32">
+        {/* The feed is chrome-light by design, but a page still needs a
+            heading. Visually hidden rather than absent. */}
+        <h1 className="sr-only">{tr('community.pageTitle')}</h1>
         {/* Filter bar sits above the feed and stays put — the only chrome. */}
         <div className="sticky top-[4.5rem] z-30 -mx-4 mb-6 border-b border-ink-ghost px-4 py-3 backdrop-blur-xl md:top-[5.5rem] md:-mx-8 md:px-8">
           <div
@@ -163,7 +166,7 @@ export default function CommunityPage() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-ink">{p.author.name}</p>
                       <p className="micro mt-1 truncate text-ink-dim">
-                        <a href={`/explore/${p.placeId}`} className="hover:text-accent">
+                        <a href={`/explore/${p.placeId}`} className="tap hover:text-accent">
                           {p.place}
                         </a>{' '}
                         · {p.when}
@@ -189,7 +192,7 @@ export default function CommunityPage() {
                         <button
                           type="button"
                           onClick={() => setExpanded((s) => ({ ...s, [p.id]: true }))}
-                          className="text-ink-dim transition-colors hover:text-accent"
+                          className="tap text-ink-dim transition-colors hover:text-accent"
                         >
                           {tr('community.more')}
                         </button>

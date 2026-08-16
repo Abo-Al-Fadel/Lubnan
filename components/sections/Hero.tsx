@@ -153,7 +153,7 @@ export function HeroOcclusion({
           <div className="grid grid-cols-2 md:grid-cols-4 md:divide-x md:divide-[color:var(--hero-ink-ghost)]">
             <div className="border-b border-r border-hero-ink-ghost px-5 py-6 md:border-b-0 md:border-r-0 md:px-8 md:py-8">
               <p className="micro text-hero-ink-dim">{tr('hero.start')}</p>
-              <a href="#" className="group mt-3 inline-flex items-center gap-2 text-sm text-hero-ink">
+              <a href="/plan" className="group mt-3 inline-flex items-center gap-2 text-sm text-hero-ink">
                 <span className="border-b border-hero-ink pb-1 transition-colors duration-300 ease-out group-hover:border-accent group-hover:text-accent">
                   {tr('hero.plan')}
                 </span>
