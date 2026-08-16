@@ -1,0 +1,56 @@
+name: server
+
+on:
+  push:
+    branches: [main]
+    paths: ['server/**', '.github/workflows/server.yml']
+  pull_request:
+    paths: ['server/**', '.github/workflows/server.yml']
+
+env:
+  # Turns on TreatWarningsAsErrors and deterministic build paths. Warnings are
+  # advisory while you are working and fatal before anything merges.
+  ContinuousIntegrationBuild: 'true'
+  DOTNET_NOLOGO: 'true'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Test
+        run: dotnet test --no-build --configuration Release --verbosity normal
+
+      # A migration that does not match the model means somebody changed an
+      # entity and did not scaffold. It fails here rather than at deploy, where
+      # the symptom is a column that does not exist.
+      - name: Model and migrations agree
+        run: |
+          dotnet tool install --global dotnet-ef --version 9.0.8
+          dotnet ef migrations has-pending-model-changes \
+            --project src/Lubnan.Infrastructure \
+            --startup-project src/Lubnan.Infrastructure \
+            --no-build --configuration Release
+
+      # The seed is generated from the frontend's data. If someone edits the
+      # copy and forgets to regenerate, the two drift silently.
+      - name: Seed is up to date
+        run: |
+          node scripts/export-seed.mjs
+          git diff --exit-code src/Lubnan.Infrastructure/Persistence/Seed/places.seed.json

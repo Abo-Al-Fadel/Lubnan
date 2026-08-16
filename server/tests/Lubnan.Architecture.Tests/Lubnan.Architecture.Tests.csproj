@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Lubnan.Domain\Lubnan.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Lubnan.Application\Lubnan.Application.csproj" />
+    <ProjectReference Include="..\..\src\Lubnan.Infrastructure\Lubnan.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Lubnan.Api\Lubnan.Api.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="NetArchTest.Rules" />
+    <PackageReference Include="coverlet.collector" />
+  </ItemGroup>
+
+</Project>

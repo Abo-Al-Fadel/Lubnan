@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    No <PackageReference> and no <ProjectReference>. That emptiness is the
+    point: the domain compiles with nothing but the BCL, so a rule expressed
+    here cannot quietly depend on EF, on ASP.NET, or on how anything is
+    stored. Lubnan.Architecture.Tests asserts it stays empty.
+  -->
+
+</Project>

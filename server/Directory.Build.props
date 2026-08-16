@@ -1,0 +1,42 @@
+<Project>
+
+  <!--
+    Settings every project inherits. Adding a project should never mean
+    copying a block of properties into a new .csproj and getting one of them
+    subtly wrong; that divergence is what makes a solution unpleasant at
+    twenty projects.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!--
+      Warnings are errors in CI only. Locally a warning should not stop you
+      mid-thought, but nothing warning-shaped reaches main.
+    -->
+    <TreatWarningsAsErrors Condition="'$(ContinuousIntegrationBuild)' == 'true'">true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+
+    <!-- Deterministic output, so two builds of one commit are byte-identical. -->
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!--
+      CS1591: not every public member needs a doc comment.
+      CS1573: nor does documenting one parameter of a record oblige you to
+      document the other fourteen. Half these DTOs have exactly one field
+      that needs explaining and thirteen called Name.
+    -->
+    <NoWarn>$(NoWarn);CS1591;CS1573</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('Tests'))">
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+</Project>

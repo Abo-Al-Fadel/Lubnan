@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Lubnan.Domain\Lubnan.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      EF Core abstractions, not a provider. A slice writes its own query
+      against IAppDbContext, because the whole point of a slice is that its
+      read is shaped by what it renders. A generic IRepository<T> would put a
+      lowest-common-denominator API between the handler and the query planner,
+      and every non-trivial read would need an escape hatch through it.
+
+      Lubnan.Architecture.Tests asserts this project never sees Npgsql or
+      Lubnan.Infrastructure: the boundary that matters is the *provider*, not
+      the ORM.
+    -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      So a slice can own its endpoint, and a reviewer opening
+      Features/Places/GetPlaceBySlug sees the route, the validation, the
+      handler and the response without navigating anywhere.
+
+      The cost is that ASP.NET types are *reachable* from a handler. The
+      architecture tests close that hole directly: no type implementing
+      IRequestHandler may depend on Microsoft.AspNetCore. Handlers stay
+      testable without a host; only the Endpoint class touches HTTP.
+    -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>

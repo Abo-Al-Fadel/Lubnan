@@ -1,0 +1,43 @@
+# Everything the API needs to run locally, and nothing it does not.
+#
+# The obvious version of this file has postgres, redis, minio, a collector and
+# a log viewer on day one. Five containers, four of them unused, and each one a
+# thing that can be misconfigured in a way you will not notice until the phase
+# that needs it. Services arrive here on the commit that starts using them:
+#
+#   redis    with distributed rate limiting and the L2 cache
+#   minio    with presigned uploads
+#   otel     when there is a trace worth reading
+#
+#   docker compose up -d
+#   dotnet ef database update --project src/Lubnan.Infrastructure
+#   dotnet run --project src/Lubnan.Api -- seed
+#   dotnet run --project src/Lubnan.Api
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: lubnan-postgres
+    environment:
+      POSTGRES_USER: lubnan
+      POSTGRES_PASSWORD: lubnan
+      POSTGRES_DB: lubnan
+      # Deterministic collation. Left to the host's locale, the sort order of
+      # a text index differs between a developer's machine and the server, and
+      # so does the set of rows a range query returns.
+      POSTGRES_INITDB_ARGS: "--locale=C --encoding=UTF8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      # Named user and database: bare `pg_isready` reports the server is up
+      # while the init scripts are still running, and the first migration then
+      # races them.
+      test: ["CMD-SHELL", "pg_isready -U lubnan -d lubnan"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres-data:

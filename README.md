@@ -10,6 +10,12 @@ npm run dev        # http://localhost:3000
 npm run build
 ```
 
+The API lives beside it in [server/](server/) — .NET 9, PostgreSQL, vertical
+slices — and is deployed separately. It has its own
+[README](server/README.md). The web app does not call it yet: the frontend
+still reads `data/*.json`, and the swap happens per feature rather than all at
+once.
+
 ## Routes
 
 | Route | What it is |

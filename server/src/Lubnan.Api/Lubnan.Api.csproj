@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <UserSecretsId>lubnan-api</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The integration tests need to see Program to build a test host. -->
+    <InternalsVisibleTo Include="Lubnan.Api.IntegrationTests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      The composition root is the only project allowed to reference
+      Infrastructure. That single reference is what keeps the dependency arrow
+      pointing up: Application declares interfaces, Infrastructure implements
+      them, and the two meet here and nowhere else.
+    -->
+    <ProjectReference Include="..\Lubnan.Application\Lubnan.Application.csproj" />
+    <ProjectReference Include="..\Lubnan.Infrastructure\Lubnan.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
+    <PackageReference Include="Scalar.AspNetCore" />
+  </ItemGroup>
+
+</Project>

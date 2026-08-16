@@ -1,0 +1,62 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+
+[*.{cs,csx}]
+indent_size = 4
+
+[*.{csproj,props,targets,json,yml,yaml}]
+indent_size = 2
+
+[*.cs]
+# Modern C# the codebase already assumes.
+csharp_style_namespace_declarations = file_scoped:error
+csharp_style_prefer_primary_constructors = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_prefer_braces = when_multiline:suggestion
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:error
+dotnet_style_readonly_field = true:warning
+
+# Usings outside the namespace, System first.
+csharp_using_directive_placement = outside_namespace:error
+dotnet_sort_system_directives_first = true
+
+# A handler that awaits without a CancellationToken is a handler that cannot
+# be cancelled when the client hangs up. Make that visible.
+dotnet_diagnostic.CA2016.severity = warning
+
+# Sealed by default: unsealed types in this codebase should be deliberate.
+dotnet_diagnostic.CA1852.severity = warning
+
+# CA1716 objects to type names that are keywords in *some* CLR language.
+# Error, Result and Region are the words the domain uses, and renaming a
+# domain concept to avoid a Visual Basic keyword is the tail wagging the dog.
+dotnet_diagnostic.CA1716.severity = none
+
+# Naming: interfaces I-prefixed, private fields _camelCase.
+dotnet_naming_rule.interfaces_start_with_i.severity = error
+dotnet_naming_rule.interfaces_start_with_i.symbols = interfaces
+dotnet_naming_rule.interfaces_start_with_i.style = prefix_i
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+dotnet_naming_style.prefix_i.required_prefix = I
+dotnet_naming_style.prefix_i.capitalization = pascal_case
+
+[**/Migrations/**.cs]
+# Written by dotnet-ef, not by a person. Holding generated code to the house
+# style means either editing it after every scaffold, which the next scaffold
+# undoes, or turning off the rule for the whole solution.
+generated_code = true
+dotnet_analyzer_diagnostic.severity = none
+dotnet_diagnostic.IDE0161.severity = none
+dotnet_diagnostic.IDE0300.severity = none
+dotnet_diagnostic.IDE0028.severity = none
+
+[tests/**/*.cs]
+# Test names read as sentences: Submit_rejects_an_empty_caption.
+dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.IDE1006.severity = none

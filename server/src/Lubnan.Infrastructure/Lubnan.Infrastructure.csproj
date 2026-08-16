@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Lubnan.Application\Lubnan.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      The seed is a file rather than a C# literal so it can be regenerated
+      from the frontend's data by scripts/export-seed.mjs, and so the diff of
+      an editorial change reads as an editorial change.
+    -->
+    <EmbeddedResource Include="Persistence\Seed\places.seed.json" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,170 @@
+using System.Threading.RateLimiting;
+using Lubnan.Api.Extensions;
+using Lubnan.Api.Middleware;
+using Lubnan.Application;
+using Lubnan.Infrastructure;
+using Lubnan.Infrastructure.Persistence.Seed;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Scalar.AspNetCore;
+
+// The composition root, and the only file in the solution that knows about
+// every layer at once. Everything below is wiring: no behaviour lives here,
+// which is why it can stay short as the feature count grows.
+
+var builder = WebApplication.CreateBuilder(args);
+
+var connectionString = builder.Configuration.GetConnectionString("Database")
+    ?? throw new InvalidOperationException(
+        "ConnectionStrings:Database is not configured. Set it in user secrets, or as ConnectionStrings__Database.");
+
+builder.Services
+    .AddApplication()
+    .AddInfrastructure(connectionString)
+    .AddEndpoints(Lubnan.Application.DependencyInjection.Assembly)
+    .AddHealth()
+    .AddObservability(builder.Configuration);
+
+// Every failure, expected or not, leaves as RFC 7807.
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
+builder.Services.AddOpenApi();
+
+// ── CORS ────────────────────────────────────────────────────────────────────
+//
+// The frontend and the API are deployed separately, so every browser call is
+// cross-origin. Origins come from configuration and are listed explicitly:
+// AllowAnyOrigin cannot be combined with credentials, and the moment sessions
+// exist this policy has to carry them.
+//
+// Serve both halves from one registrable domain — lubnan.app and
+// api.lubnan.app — and the pair stays *same-site*, which is what lets the
+// refresh cookie be SameSite=Lax. Unrelated domains force SameSite=None, and
+// that cookie is third-party: browsers are steadily turning those off.
+// This is a deployment decision that decides an authentication design, which
+// is why it is written down here rather than discovered later.
+const string CorsPolicy = "web";
+
+var allowedOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? [];
+
+builder.Services.AddCors(options => options.AddPolicy(CorsPolicy, policy => policy
+    .WithOrigins(allowedOrigins)
+    .WithHeaders("Content-Type", "Accept", "Accept-Language", "Authorization", CorrelationIdMiddleware.HeaderName)
+    .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE")
+    .WithExposedHeaders(CorrelationIdMiddleware.HeaderName, "Content-Language")
+    .AllowCredentials()
+    .SetPreflightMaxAge(TimeSpan.FromHours(1))));
+
+// ── Rate limiting ───────────────────────────────────────────────────────────
+//
+// Counted in this process's memory. That is correct for one instance and wrong
+// for two: with N replicas the effective limit is N times the number below,
+// and nothing about it looks wrong in development.
+//
+// Before the second replica exists this must move to a shared counter in
+// Redis. It is recorded here rather than in a document because this is the
+// code that has to change.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddPolicy("read", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 300, Window = TimeSpan.FromMinutes(1) }));
+
+    // Partitioned by user where there is one, and only by IP otherwise, so a
+    // single abusive account cannot hide behind a carrier NAT that thousands
+    // of legitimate readers share.
+    options.AddPolicy("write", context => RateLimitPartition.GetTokenBucketLimiter(
+        context.User.Identity?.Name ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new TokenBucketRateLimiterOptions
+        {
+            TokenLimit = 20,
+            TokensPerPeriod = 5,
+            ReplenishmentPeriod = TimeSpan.FromMinutes(1),
+            AutoReplenishment = true,
+        }));
+
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        // Tell the client when to come back. A bare 429 invites an immediate
+        // retry, which is the behaviour the limit exists to prevent.
+        context.HttpContext.Response.Headers.RetryAfter = "60";
+
+        await context.HttpContext.Response.WriteAsJsonAsync(
+            new
+            {
+                type = "https://lubnan.app/errors/rate-limit",
+                title = "Too many requests.",
+                status = StatusCodes.Status429TooManyRequests,
+                code = "request.rateLimited",
+            },
+            cancellationToken).ConfigureAwait(false);
+    };
+});
+
+// ── Output cache ────────────────────────────────────────────────────────────
+//
+// Places change when an editor publishes, which is rarely. Varying by
+// Accept-Language as well as by query string matters: without it the first
+// reader's language is served to everyone until the entry expires, and that
+// bug only appears once there is a cache in front.
+builder.Services.AddOutputCache(options => options.AddPolicy("places", policy => policy
+    .Expire(TimeSpan.FromMinutes(5))
+    .SetVaryByQuery("region", "category", "locale")
+    .SetVaryByHeader("Accept-Language")));
+
+var app = builder.Build();
+
+// Seeding is a command, not a startup step. Two replicas starting together
+// would race, and a seeder that runs automatically eventually runs somewhere
+// it was not meant to.
+//
+//   dotnet run --project src/Lubnan.Api -- seed
+if (args.Contains("seed", StringComparer.Ordinal))
+{
+    using var scope = app.Services.CreateScope();
+    await scope.ServiceProvider.GetRequiredService<DatabaseSeeder>().SeedAsync().ConfigureAwait(false);
+    return;
+}
+
+app.UseExceptionHandler();
+app.UseMiddleware<CorrelationIdMiddleware>();
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.MapScalarApiReference(options => options.WithTitle("Lubnān API"));
+}
+else
+{
+    // HSTS only outside development: it is remembered by the browser for its
+    // full max-age, so setting it on localhost breaks plain HTTP there for
+    // every other project on the machine.
+    app.UseHsts();
+    app.UseHttpsRedirection();
+}
+
+app.UseCors(CorsPolicy);
+app.UseRateLimiter();
+app.UseOutputCache();
+
+app.MapEndpoints();
+
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    // No checks at all: this answers "is the process up", and nothing more.
+    Predicate = _ => false,
+});
+
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains(HealthExtensions.ReadyTag),
+});
+
+await app.RunAsync().ConfigureAwait(false);
+
+/// <summary>Exposed so the integration tests can build a host from it.</summary>
+public partial class Program;
