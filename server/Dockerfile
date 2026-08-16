@@ -21,7 +21,11 @@ WORKDIR /src
 # before copying the source means editing a handler does not re-download the
 # NuGet graph. Copying everything up front would invalidate the restore on
 # every keystroke.
-COPY Directory.Build.props Directory.Packages.props ./
+# .editorconfig is not optional here. EnforceCodeStyleInBuild is on and CI turns
+# warnings into errors, so the analyser configuration is a build input: without
+# it the image fails on rules the host suppresses, and the error arrives from a
+# file nobody edited.
+COPY Directory.Build.props Directory.Packages.props .editorconfig ./
 COPY src/Lubnan.Domain/*.csproj          src/Lubnan.Domain/
 COPY src/Lubnan.Application/*.csproj     src/Lubnan.Application/
 COPY src/Lubnan.Infrastructure/*.csproj  src/Lubnan.Infrastructure/
