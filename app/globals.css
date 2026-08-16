@@ -56,6 +56,7 @@
     --accent-ink: #1c2528;
     --nav-accent: #2e5a66;
     --nav-accent-ink: #f0ede1;
+    --status-warn: #9a5b1e;
     --hero-ink: #f1ede1;
     --hero-ink-dim: rgba(241, 237, 225, 0.62);
     --hero-ink-ghost: rgba(241, 237, 225, 0.2);
@@ -85,6 +86,7 @@
     --accent-ink: #16333b;
     --nav-accent: #2e5a66;
     --nav-accent-ink: #f0ede1;
+    --status-warn: #9a5b1e;
     --hero-ink: #f0ede1;
     --hero-ink-dim: rgba(240, 237, 225, 0.66);
     --hero-ink-ghost: rgba(240, 237, 225, 0.2);
@@ -120,6 +122,7 @@
     --accent-ink: #ffffff;
     --nav-accent: #2e5a66;
     --nav-accent-ink: #f0ede1;
+    --status-warn: #9a5b1e;
     /* Hero type sits on the photograph, not on the page ground.
        Eggshell, borrowed from Raouche, not the cool #F3F5F3 this used to be.
        Pure white on a cold slate photograph reads as a screen element printed
@@ -169,6 +172,7 @@
     --accent-ink: #ffffff;
     --nav-accent: #2e5a66;
     --nav-accent-ink: #f0ede1;
+    --status-warn: #9a5b1e;
     --hero-ink: #1e2a26;
     --hero-ink-dim: rgba(30, 42, 38, 0.66);
     --hero-ink-ghost: rgba(30, 42, 38, 0.2);
@@ -193,6 +197,7 @@
     --ink-ghost: rgba(237, 232, 220, 0.18);
     --accent: #7fb6c4;
     --accent-ink: #12171a;
+    --status-warn: #e0a05a;
   }
 
   [data-theme='light'] [data-palette='raouche'] {
@@ -723,8 +728,8 @@ html {
     );
 }
 
-/* The wordmark wipes up from its own baseline, so it reads as being revealed
-   by the frame rather than sliding in from somewhere off-screen.
+/* The wordmark writes itself left to right, the way the name is read.
+   In RTL it writes right to left, because that is the way *that* reader reads.
 
    The insets are negative on three sides, and that is load-bearing. `inset(0…)`
    clips to the *border box*, which for this span is one line box — and the line
@@ -732,18 +737,34 @@ html {
    it by roughly 43% of its height above and below, so clipping to zero sheared
    the macron off Ā entirely and cut the flat bottoms off every letter. The
    ratio is font-size-independent, so one set of percentages holds at every
-   viewport. Only the bottom animates; it is the wipe. */
-@keyframes word-mask {
+   viewport. Only the trailing edge animates; it is the pen. */
+@keyframes word-write {
   from {
-    clip-path: inset(-55% -5% 100% -5%);
+    clip-path: inset(-55% 100% -55% -5%);
   }
   to {
     clip-path: inset(-55% -5% -55% -5%);
   }
 }
 
+@keyframes word-write-rtl {
+  from {
+    clip-path: inset(-55% -5% -55% 100%);
+  }
+  to {
+    clip-path: inset(-55% -5% -55% -5%);
+  }
+}
+
+/* Slower than the old upward wipe, and on a near-linear curve. A hard
+   ease-out finishes the last two thirds of the word almost instantly, which
+   reads as a reveal rather than as writing. */
 .anim-word {
-  animation: word-mask 1000ms var(--ease-out) 140ms both;
+  animation: word-write 1500ms cubic-bezier(0.5, 0, 0.2, 1) 160ms both;
+}
+
+[dir='rtl'] .anim-word {
+  animation-name: word-write-rtl;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -47,36 +47,66 @@ Key tokens: `--ground` / `--band` (surfaces), `--ink` / `--ink-dim` /
 
 ### Images
 
-`components/ui/PhotoField.tsx` resolves a plate ID to `/img/<ID>.png`, then
-`.jpg`, and on phones probes for `<ID>M.png` first. If nothing resolves it
-falls back to a tonal field in the palette's photographic range, so the site
-works with zero, some, or all plates present. Dropping a correctly named file
-into `public/img/` is the whole job.
+Plates are grouped by series letter, so a folder listing answers "what is the
+J series" without opening anything:
 
-The hero videos (`public/img/*.mp4`) are gitignored — they are ~500MB each,
-past GitHub's per-file limit. The hero shows the still without them.
+```
+public/
+  img/A/  A1.png A1M.png      hero plate and its phone crop
+  img/J/  J1..J8.png          place heroes
+  img/K/  K1..K8.png          place cut-outs (alpha)
+  img/S/  S1..S8.png          People, the work
+  …
+  vid/    A1.mp4 A2.mp4       gitignored, ~500MB each
+  brand/  favicon.png
+```
+
+Every path is resolved through `lib/plates.ts` — nothing composes an asset URL
+inline, so the layout on disk can change again without a search across the
+codebase. `PhotoField` tries `.png` then `.jpg`, probes for a phone crop
+(`<ID>M`, `-m`, `_m`, `m`) on narrow viewports, and falls back to a tonal field
+in the palette's photographic range when nothing resolves. The site works with
+zero, some, or all plates present.
+
+The hero videos are gitignored: past GitHub's 100MB per-file limit. The hero
+layers video *over* the still and only reveals it once it can play, so with no
+file present the photograph simply stays.
 
 ## Verification
 
-Playwright scripts under `scripts/`. Both are assertions, not screenshots:
+Three Playwright suites under `scripts/`. All assert; none are just screenshots.
 
 ```bash
 node scripts/verify.mjs verify   # landing page: overflow, contrast, i18n, images
-node scripts/routes.mjs          # all 11 routes at 1440 and 412
+node scripts/routes.mjs          # 11 routes at 1440 and 412, contrast over photography
+node scripts/crawl.mjs           # 18 routes at 1440 and 390, pressing every control
+node scripts/build-border.mjs    # regenerate data/lebanon-border.ts from GeoJSON
 ```
 
-`routes.mjs` screenshots each text block and measures its contrast against the
-pixels **actually painted behind it** — computed styles cannot answer this when
-the background is a photograph under a gradient, and every serious visual bug
-in this project so far has been of that kind.
+Two of these are worth knowing about:
+
+**`routes.mjs`** screenshots each text block and measures contrast against the
+pixels *actually painted behind it*. Computed styles cannot answer this when
+the background is a photograph under a gradient, and most of the real visual
+bugs in this project have been of that kind. It samples beside the text and
+filters glyph-coloured pixels, because sampling through the text reports type
+against itself.
+
+**`crawl.mjs`** walks every route and **presses every visible control**, then
+reports errors, dead links, links to unknown routes, missing accessible names,
+`target="_blank"` without `noopener`, tap targets under 24px, heading structure
+and horizontal overflow. Its first run found 239 problems.
 
 ## Known gaps
 
-- `L8` (Batroun annotated frame) and `S1`–`S8` (People work objects) are not
-  yet generated; those slots show the tonal placeholder.
 - `/people` deliberately shows each person's **work** rather than a generated
-  portrait — inventing a likeness of a real, named, often living person and
-  presenting it as photography is not something this project does. Each entry
-  keeps a slot for a licensed portrait.
-- Plates are full-resolution PNGs. They should be converted to WebP at display
-  size before this is deployed anywhere real.
+  portrait. Inventing a likeness of a real, named, often living person and
+  presenting it as photography is not something this project does. Six entries
+  use licence-checked Wikimedia images (see [CREDITS.md](CREDITS.md)); Elie
+  Saab and Taleb use object plates because no clearly free photograph exists.
+- Story, People, Achievements, Legacy, Community and Profile open on type
+  rather than a banner. Plates `T1`–`T6` exist for banners if wanted.
+- Plates are full-resolution PNGs, ~233MB total. They should be converted to
+  WebP at display size before this is deployed anywhere real.
+- `data/flights.ts` is a representative schedule, not a live feed, and the
+  board says so on its face.

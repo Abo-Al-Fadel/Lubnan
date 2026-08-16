@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { PageShell, PageBanner } from '@/components/PageShell';
 import { PhotoField } from '@/components/ui/PhotoField';
+import { FlightBoard } from '@/components/ui/FlightBoard';
 import { useSite } from '@/lib/site-state';
 import { places } from '@/data/places';
 
@@ -204,6 +205,21 @@ export default function PlanPage() {
             })}
           </div>
         </div>
+      </section>
+
+      {/* ── The board ─────────────────────────────────────────────────────
+          A schedule is the one thing a travel site is actually asked for, and
+          it belongs directly after the flights step of the accordion. */}
+      <section id="board" className="scroll-mt-28 border-t border-ink-ghost bg-ground px-5 py-16 md:px-10 md:py-24">
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="max-w-[20ch] font-display text-[clamp(1.5rem,3vw,2.25rem)] font-medium uppercase leading-[1.06] text-ink">
+              {tr('flight.title')}
+            </p>
+            <p className="mt-3 max-w-[46ch] text-sm text-ink-dim">{tr('flight.lede')}</p>
+          </div>
+        </div>
+        <FlightBoard />
       </section>
 
       {/* ── Itinerary builder ─────────────────────────────────────────── */}

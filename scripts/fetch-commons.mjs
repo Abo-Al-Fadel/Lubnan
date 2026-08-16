@@ -78,7 +78,7 @@ if (mode === 'search') {
       console.log(`SKIP  ${plate}  licence "${i.licence}" not clearly free`);
       continue;
     }
-    const out = `public/img/${plate}.png`;
+    const out = `public/img/${plate.match(/^[A-Za-z]+/)[0].toUpperCase()}/${plate}.png`;
     const res = await fetch(i.url, { headers: { 'User-Agent': UA } });
     if (!res.ok) {
       console.log(`SKIP  ${plate}  download ${res.status}`);

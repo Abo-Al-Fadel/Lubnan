@@ -1,9 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-
-/** Tried in order. PNG first — that is what the plates are exported as. */
-const EXTENSIONS = ['png', 'jpg'] as const;
+import { PLATE_EXTENSIONS, phoneCandidates, platePath, videoPath } from '@/lib/plates';
 
 /**
  * An image slot.
@@ -59,13 +57,7 @@ export function PhotoField({
     if (!plate || typeof window === 'undefined') return;
     if (!window.matchMedia('(max-width: 767px)').matches) return;
 
-    /* Three naming conventions, because all three are natural to type and
-       guessing wrong just silently serves the desktop crop. `A1M` is what the
-       exports actually arrived as. */
-    const candidates: string[] = [];
-    for (const suffix of ['M', '-m', '_m', 'm']) {
-      for (const ext of EXTENSIONS) candidates.push(`/img/${plate}${suffix}.${ext}`);
-    }
+    const candidates = phoneCandidates(plate);
 
     let cancelled = false;
     const probe = (i: number) => {
@@ -84,8 +76,8 @@ export function PhotoField({
     };
   }, [plate]);
 
-  const exhausted = extIndex >= EXTENSIONS.length;
-  const src = phoneSrc ?? (plate ? `/img/${plate}.${EXTENSIONS[extIndex]}` : null);
+  const exhausted = extIndex >= PLATE_EXTENSIONS.length;
+  const src = phoneSrc ?? (plate ? platePath(plate, PLATE_EXTENSIONS[extIndex]) : null);
   const showImage = Boolean(src) && (!exhausted || Boolean(phoneSrc));
 
   /**
@@ -131,7 +123,7 @@ export function PhotoField({
     if (!video || !loaded || typeof window === 'undefined') return;
     if (!window.matchMedia('(min-width: 768px)').matches) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const id = window.setTimeout(() => setVideoSrc(`/img/${video}.mp4`), 400);
+    const id = window.setTimeout(() => setVideoSrc(videoPath(video)), 400);
     return () => window.clearTimeout(id);
   }, [video, loaded]);
 

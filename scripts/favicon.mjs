@@ -16,7 +16,7 @@ await page.goto('http://localhost:3000');
 
 const result = await page.evaluate(async () => {
   const img = new Image();
-  img.src = '/img/favicon.png';
+  img.src = '/brand/favicon.png';
   await img.decode();
 
   const c = document.createElement('canvas');
@@ -72,7 +72,7 @@ console.log(JSON.stringify(result.report, null, 1));
 for (const [size, b64] of Object.entries(result.out)) {
   const path =
     size === '512'
-      ? 'public/img/favicon-trimmed.png'
+      ? 'public/brand/favicon-trimmed.png'
       : size === '180'
         ? 'app/apple-icon.png'
         : 'app/icon.png';

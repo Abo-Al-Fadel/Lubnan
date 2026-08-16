@@ -132,6 +132,10 @@ for (const [vpName, viewport] of VIEWPORTS) {
         els
           .filter((el) => {
             if (el.classList.contains('tap')) return false;
+            // Visually hidden controls have no on-screen target to measure.
+            // They get their size from focus styles, at the moment they appear.
+            const cs = getComputedStyle(el);
+            if (cs.clip === 'rect(0px, 0px, 0px, 0px)' || cs.clipPath === 'inset(50%)') return false;
             const r = el.getBoundingClientRect();
             return r.width > 0 && r.height > 0 && (r.height < 24 || r.width < 24);
           })

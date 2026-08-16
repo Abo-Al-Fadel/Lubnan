@@ -23,6 +23,6 @@ ref/
 # limit per file, so they cannot be committed to a normal repository at all.
 # The hero degrades correctly without them: PhotoField layers the video over
 # the still and only reveals it once it can play, so with no file present the
-# photograph simply stays. Drop the mp4s back into public/img/ locally and the
+# photograph simply stays. Drop the mp4s back into public/vid/ locally and the
 # motion returns with no code change.
-public/img/*.mp4
+public/vid/*.mp4

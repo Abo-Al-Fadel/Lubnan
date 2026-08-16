@@ -2,26 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { subjects } from '@/components/ui/Subjects';
+import { cutoutCandidates } from '@/lib/plates';
 import type { Variation } from '@/data/variations';
-
-/**
- * Cut-outs need an alpha channel, so only formats that carry one. Both
- * locations are tried: alongside the plates in /img/ (where they naturally
- * get dropped) and in /img/cutouts/ for anyone who prefers them separated.
- */
-const CANDIDATES = (plate: string) => [
-  `/img/${plate}.png`,
-  `/img/${plate}.webp`,
-  `/img/cutouts/${plate}.png`,
-  `/img/cutouts/${plate}.webp`,
-];
 
 /**
  * The subject that occludes the wordmark.
  *
- * Looks for `/img/cutouts/<plate>.png` (then `.webp`) and falls back to the
- * drawn SVG silhouette when neither is there. Same contract as PhotoField, so
- * dropping B1/B2/B3 into public/img/cutouts is the whole integration step.
+ * Resolves through lib/plates, so `K4` becomes `/img/K/K4.png`, and falls back
+ * to the drawn SVG silhouette when no file resolves.
  *
  * Height is set and width left auto, so the file's own aspect ratio drives the
  * shape. That means the cut-out does not have to be square — whatever crop the
@@ -41,7 +29,7 @@ export function HeroSubject({
   const [index, setIndex] = useState(0);
   const imgRef = useRef<HTMLImageElement>(null);
   const Drawn = subjects[variation.subject];
-  const urls = CANDIDATES(variation.cutoutPlate);
+  const urls = cutoutCandidates(variation.cutoutPlate);
 
   /* A candidate that 404s from cache is already `complete` with zero width by
      the time React hydrates, and fires no `error` event — so the chain would

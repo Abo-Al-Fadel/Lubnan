@@ -337,8 +337,10 @@ export function SecretsList({ showSlots }: Slots) {
   const { tr, tc } = useSite();
   const [open, setOpen] = useState(0);
 
+  /* scroll-mt clears the fixed navbar. Without it an anchor lands with its
+     heading underneath the bar. */
   return (
-    <section className="bg-ground px-5 py-20 md:px-10 md:py-28">
+    <section id="secrets" className="scroll-mt-28 bg-ground px-5 py-20 md:px-10 md:py-28">
       {/* Two columns, not three. As 3 + 4 + 5 the middle column held only a
           heading and two lines, so everything below them was a tall empty
           rectangle sitting between the photograph and the list. Heading, lede
