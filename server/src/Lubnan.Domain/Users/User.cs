@@ -47,6 +47,7 @@ public sealed class User : AggregateRoot
 
     private readonly List<UserSession> _sessions = [];
     private readonly List<AccountEvent> _accountEvents = [];
+    private readonly List<UserToken> _tokens = [];
 
     private User(Guid id, Email email, DisplayName displayName, string passwordHash, DateTimeOffset now)
         : base(id)
@@ -120,6 +121,8 @@ public sealed class User : AggregateRoot
 
     public IReadOnlyList<AccountEvent> AccountEvents => _accountEvents.AsReadOnly();
 
+    public IReadOnlyList<UserToken> Tokens => _tokens.AsReadOnly();
+
     /// <summary>Can this account sign in and act right now?</summary>
     public bool CanSignIn(DateTimeOffset now) =>
         State is AccountState.Active or AccountState.PendingDeletion
@@ -185,6 +188,69 @@ public sealed class User : AggregateRoot
         Record(AccountEventType.EmailChanged, now);
         Raise(new UserEmailChanged(Id, newEmail.Value));
         return Result.Success();
+    }
+
+    // ── One-time tokens ─────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Issue a single-use code, invalidating any earlier one for the same
+    /// purpose.
+    /// </summary>
+    /// <remarks>
+    /// Superseding matters. Without it, every "resend the link" leaves another
+    /// live token behind, so an account that has asked six times has six valid
+    /// ways in, each as old as the first request. One outstanding token per
+    /// purpose keeps the window the size it was designed to be.
+    /// </remarks>
+    public UserToken IssueToken(
+        TokenPurpose purpose,
+        string tokenHash,
+        DateTimeOffset now,
+        TimeSpan lifetime,
+        string? payload = null)
+    {
+        foreach (var superseded in _tokens.Where(t => t.Purpose == purpose && t.IsUsable(now)))
+        {
+            superseded.Consume(now);
+        }
+
+        var token = UserToken.Issue(Id, purpose, tokenHash, now, lifetime, payload);
+        _tokens.Add(token);
+
+        if (purpose is TokenPurpose.ResetPassword)
+        {
+            Record(AccountEventType.PasswordResetRequested, now);
+        }
+        else if (purpose is TokenPurpose.ChangeEmail)
+        {
+            Record(AccountEventType.EmailChangeRequested, now);
+        }
+
+        return token;
+    }
+
+    /// <summary>
+    /// Spend a token, if it is the right kind and still alive.
+    /// </summary>
+    /// <remarks>
+    /// The comparison is by hash, which the caller computes from what the
+    /// client presented. Nothing here ever sees the token itself.
+    /// </remarks>
+    public Result<UserToken> ConsumeToken(TokenPurpose purpose, string tokenHash, DateTimeOffset now)
+    {
+        var token = _tokens.FirstOrDefault(t => t.Purpose == purpose && t.TokenHash == tokenHash);
+
+        if (token is null || !token.IsUsable(now))
+        {
+            // Expired, already spent, wrong purpose and never existed all answer
+            // identically. Distinguishing them tells someone holding a stale
+            // link whether the address exists and whether the link was used.
+            return Result.Failure<UserToken>(Error.Validation(
+                "token.invalid", "That link is no longer valid. Request a new one."));
+        }
+
+        token.Consume(now);
+        return Result.Success(token);
     }
 
     // ── Passwords ───────────────────────────────────────────────────────────

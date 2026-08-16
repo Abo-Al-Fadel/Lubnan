@@ -4,11 +4,16 @@ The API behind the Next.js app in the repository root. .NET 9, PostgreSQL,
 vertical slices.
 
 ```bash
-docker compose up -d
+docker compose up -d                                    # postgres, on host port 5433
 dotnet ef database update --project src/Lubnan.Infrastructure --startup-project src/Lubnan.Infrastructure
-dotnet run --project src/Lubnan.Api -- seed
-dotnet run --project src/Lubnan.Api          # http://localhost:5080/scalar/v1
+dotnet run --project src/Lubnan.Api -- seed             # eight destinations
+
+dotnet watch run --project src/Lubnan.Api               # http://localhost:5080/scalar/v1
 ```
+
+`dotnet watch run` is the one to use day to day: it rebuilds and restarts on
+save. `dotnet run` is the same thing without the reload, and is what CI and the
+container do.
 
 > **The container publishes Postgres on host port 5433, not 5432.** A container
 > should not squat on the canonical port: anyone who has installed PostgreSQL
@@ -46,15 +51,20 @@ server/
 ├─ src/
 │  ├─ Lubnan.Domain/            no packages, no project references, at all
 │  │  ├─ Common/                Entity, AggregateRoot, ValueObject, Result, Locale
-│  │  └─ Places/                Place aggregate, Slug, Coordinates, PlateSet, events
+│  │  ├─ Places/                Place aggregate, Slug, Coordinates, PlateSet
+│  │  └─ Users/                 User aggregate, sessions, tokens, audit trail
 │  │
 │  ├─ Lubnan.Application/       the slices
 │  │  ├─ Abstractions/          IAppDbContext, IClock, ICurrentUser, ISender, IEndpoint
 │  │  ├─ Behaviors/             validation and logging, applied to every request
-│  │  └─ Features/Places/       ListPlaces, GetPlaceBySlug
+│  │  └─ Features/
+│  │     ├─ Places/             ListPlaces, GetPlaceBySlug
+│  │     └─ Identity/           Register, ConfirmEmail, Login, Refresh, Logout,
+│  │                            LogoutEverywhere, GetMe
 │  │
-│  ├─ Lubnan.Infrastructure/    EF Core, interceptors, outbox, migrations, seeder
-│  └─ Lubnan.Api/               composition root: ~150 lines, all of it wiring
+│  ├─ Lubnan.Infrastructure/    EF Core, interceptors, outbox, migrations, seeder,
+│  │                            password hashing, token minting, mail
+│  └─ Lubnan.Api/               composition root, auth wiring, CSRF, security headers
 │
 └─ tests/
    ├─ Lubnan.Domain.Tests/          pure, no host, milliseconds
@@ -165,10 +175,74 @@ calls itself unhealthy because Postgres blinked gets restarted, which turns a
 thirty-second database failover into a restart loop across every replica.
 Readiness is the orchestrator's question, not the container's.
 
+## Sessions, and the reasoning behind them
+
+**Cookies, not an `Authorization` header.** A value JavaScript can read is a
+value an XSS payload can read, and a frontend has hundreds of dependencies. An
+httpOnly cookie can be *used* by a compromised page but not *stolen* from it,
+which is the difference between one bad session and every session.
+
+| Cookie | Contents | Attributes |
+| --- | --- | --- |
+| `lubnan_at` | JWT, 15 min | httpOnly, Secure, Lax, `/` |
+| `lubnan_rt` | opaque, 30 days, rotating | httpOnly, Secure, Lax, **`/api/v1/auth`** |
+| `lubnan_csrf` | double-submit token | **readable**, Secure, Lax, `/` |
+
+The refresh cookie's path is deliberate: an ordinary request would otherwise
+carry the long-lived credential as well as the short-lived one, so any log,
+proxy or crash dump capturing one request captures the token that mints all the
+others.
+
+The trade for cookies is CSRF, and it is answered twice over. `SameSite=Lax`
+stops the browser sending the session on a cross-site POST — but that is
+enforced by the browser. The double-submit check is enforced by us: only script
+on our own origin can read `lubnan_csrf` and echo it in `X-CSRF-Token`, and a
+cross-site form can cause a request but cannot set a header. Compared in
+constant time, because an early-returning comparison leaks the token one
+character at a time.
+
+**Refresh rotation with reuse detection.** Rotation does not prevent theft — a
+stolen token works once. It makes theft *detectable*: the moment either party
+presents a spent token, the whole family is revoked and the real holder finds
+out because they were signed out. Revoking only the presented token would leave
+the thief's current one working.
+
+**Enumeration resistance.** Registration answers identically whether or not the
+address is known; the *email* carries the difference. Sign-in answers identically
+for no account, wrong password, unconfirmed, locked and suspended. Login hashes
+a decoy password when no user matches, so "no such account" takes as long as
+"wrong password" — otherwise the timing difference is a working oracle over the
+network.
+
+**Password rules: length only.** Twelve characters minimum, 256 maximum, no
+character classes. Class rules push people towards `Password1!` and reject
+passphrases that are orders of magnitude stronger; NIST SP 800-63B and the NCSC
+both now say the same. The maximum exists because hashing is deliberately slow,
+so an unbounded password is a way to make the server do unbounded work.
+
+### Not yet done
+
+Named, rather than left to be discovered:
+
+- **Breached-password check** against Have I Been Pwned's k-anonymity API on
+  registration and password change.
+- **The append-only guarantee on `account_events` is application-level.** No
+  code path updates or deletes a row. The database-level half — a role holding
+  `INSERT, SELECT` and nothing else — is a grant in a migration and is what
+  makes the log survive an attacker who has the application's own credentials.
+- **Distributed rate limiting.** Counters are in process memory, so N replicas
+  means N times the limit. Correct for one instance; the comment sits on the
+  code that has to change.
+- **The security stamp is issued but not checked per request.** "Sign out
+  everywhere" stops refresh instantly and access tokens within 15 minutes. The
+  claim is in the token from the first release specifically so that checking it
+  against a cached value later is a change to validation, not to the token
+  format — the latter would sign every user out on deploy.
+
 ## Verification
 
 ```bash
-dotnet test                                      # 55 tests, three suites
+dotnet test                                      # 67 tests, three suites
 dotnet build -p:ContinuousIntegrationBuild=true  # warnings become errors, as in CI
 ```
 

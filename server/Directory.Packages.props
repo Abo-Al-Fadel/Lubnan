@@ -15,6 +15,22 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.8" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
   </ItemGroup>
+
+  <ItemGroup Label="Identity">
+    <!--
+      Pinned to 9.0.x to match the runtime. `dotnet add package` resolves the
+      newest stable, which is 10.0.x, and taking it would pull .NET 10
+      assemblies into a net9.0 solution - the exact version drift central
+      package management exists to prevent, arriving through the tool that is
+      supposed to help.
+
+      Only PasswordHasher is used from this package. Nothing here writes
+      cryptography.
+    -->
+    <PackageVersion Include="Microsoft.Extensions.Identity.Core" Version="9.0.8" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.8" />
+    <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
+  </ItemGroup>
   <ItemGroup Label="Application">
     <PackageVersion Include="FluentValidation" Version="11.11.0" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />

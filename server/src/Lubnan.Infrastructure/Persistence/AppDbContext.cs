@@ -1,6 +1,7 @@
 using System.Reflection;
 using Lubnan.Application.Abstractions;
 using Lubnan.Domain.Places;
+using Lubnan.Domain.Users;
 using Lubnan.Infrastructure.Persistence.Outbox;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,6 +20,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Place> Places => Set<Place>();
 
     public DbSet<PlaceTranslation> PlaceTranslations => Set<PlaceTranslation>();
+
+    public DbSet<User> Users => Set<User>();
 
     internal DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
@@ -43,6 +46,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
         base.OnModelCreating(modelBuilder);
 
+        UseApplicationGeneratedKeys(modelBuilder);
         NameConstraintsInSnakeCase(modelBuilder);
     }
 
@@ -61,6 +65,42 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
         // declared as at most 120 characters would land as unbounded text and
         // the limit would exist only in C#.
         base.ConfigureConventions(configurationBuilder);
+    }
+
+    /// <summary>
+    /// Tells EF that this application, not the database, decides primary keys.
+    /// </summary>
+    /// <remarks>
+    /// Every entity here assigns <c>Guid.NewGuid()</c> in its constructor,
+    /// because an aggregate needs its children's identities before anything is
+    /// saved — <c>Callout.PlaceId</c> and <c>UserSession.UserId</c> are set in
+    /// memory, long before a transaction exists.
+    /// <para>
+    /// EF's convention for a <c>Guid</c> key is <c>ValueGeneratedOnAdd</c>, and
+    /// the corresponding rule is: <b>if the key already has a value, the row
+    /// already exists.</b> So a brand-new session added to a tracked user's
+    /// collection was classified as <c>Modified</c>, and EF issued
+    /// <c>UPDATE user_sessions … WHERE id = …</c> against a row that had never
+    /// been inserted. Zero rows affected, and the exception that surfaces is
+    /// <c>DbUpdateConcurrencyException</c> — which points at optimistic
+    /// concurrency, somewhere the bug is not.
+    /// </para>
+    /// <para>
+    /// Applied across the model rather than per entity, because the next
+    /// aggregate will have the same constructor and would hit the same wall.
+    /// </para>
+    /// </remarks>
+    private static void UseApplicationGeneratedKeys(ModelBuilder modelBuilder)
+    {
+        foreach (var entity in modelBuilder.Model.GetEntityTypes())
+        {
+            var key = entity.FindPrimaryKey();
+
+            if (key is { Properties.Count: 1 } && key.Properties[0].ClrType == typeof(Guid))
+            {
+                key.Properties[0].ValueGenerated = Microsoft.EntityFrameworkCore.Metadata.ValueGenerated.Never;
+            }
+        }
     }
 
     /// <summary>

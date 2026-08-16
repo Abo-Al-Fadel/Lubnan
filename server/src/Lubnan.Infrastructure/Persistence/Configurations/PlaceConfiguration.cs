@@ -81,11 +81,13 @@ internal sealed class PlaceConfiguration : IEntityTypeConfiguration<Place>
         // saving the same place: the second is told the row moved under them,
         // rather than silently overwriting the first. It costs no column of our
         // own and no code in the domain — xmin is already there on every row.
-        builder.Property<uint>("xmin")
-            .HasColumnName("xmin")
-            .HasColumnType("xid")
-            .ValueGeneratedOnAddOrUpdate()
-            .IsConcurrencyToken();
+        //
+        // IsRowVersion, not HasColumnType("xid") plus IsConcurrencyToken. The
+        // latter compiles, scaffolds, and produces an UPDATE whose WHERE clause
+        // never matches — so every update throws DbUpdateConcurrencyException
+        // having affected zero rows. Npgsql recognises a uint property named
+        // xmin and wires the comparison itself.
+        builder.Property<uint>("xmin").IsRowVersion();
 
         // The children are reached through the aggregate root and deleted with
         // it. Cascade here is not a convenience: an orphan callout is a dot

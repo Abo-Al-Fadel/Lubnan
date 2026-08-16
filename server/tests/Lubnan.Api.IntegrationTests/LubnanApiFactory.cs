@@ -49,6 +49,29 @@ public sealed class LubnanApiFactory : WebApplicationFactory<Program>, IAsyncLif
         // appsettings.Development.json.
         Environment.SetEnvironmentVariable("ConnectionStrings__Database", _postgres.GetConnectionString());
 
+        // Set explicitly rather than relying on appsettings.Development.json
+        // being found from the test host's content root. A suite whose
+        // configuration depends on file discovery fails differently on a
+        // developer's machine and in CI, and the failure looks like a bug in
+        // the code under test.
+        Environment.SetEnvironmentVariable("Auth__SigningKey", "integration-test-signing-key-not-a-secret-000");
+        Environment.SetEnvironmentVariable("Auth__HashKey", "integration-test-hash-key-not-a-secret-00000");
+
+        // The test host speaks plain HTTP, and a Secure cookie is not stored by
+        // a client over HTTP - so leaving this on would make every session test
+        // fail for a reason that has nothing to do with sessions.
+        Environment.SetEnvironmentVariable("Auth__RequireSecureCookies", "false");
+
+        // Every test drives requests from the same address, so the production
+        // auth limit of ten per five minutes is spent within the first few and
+        // the rest fail on each other rather than on the code.
+        //
+        // Raised rather than disabled: the limiter stays in the pipeline, so a
+        // change that breaks it still breaks a test. RateLimitTests sets its
+        // own low value to prove the limit actually fires.
+        Environment.SetEnvironmentVariable("RateLimits__AuthPermitLimit", "10000");
+        Environment.SetEnvironmentVariable("RateLimits__ReadPermitLimit", "10000");
+
         using var scope = Services.CreateScope();
 
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -60,6 +83,34 @@ public sealed class LubnanApiFactory : WebApplicationFactory<Program>, IAsyncLif
         await scope.ServiceProvider.GetRequiredService<DatabaseSeeder>()
             .SeedAsync()
             .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Confirm an address without going through the mail.
+    /// </summary>
+    /// <remarks>
+    /// Reaches into the database on purpose. The alternative is for the test to
+    /// read a file the development mail sender wrote, which couples every
+    /// sign-in test to the mail implementation — so a change of provider would
+    /// break tests that are about sessions.
+    /// <para>
+    /// The confirmation <em>flow</em> is covered by its own test against the
+    /// real token. This is only a shortcut for the tests whose subject is what
+    /// happens afterwards.
+    /// </para>
+    /// </remarks>
+    public async Task ConfirmAsync(string email)
+    {
+        using var scope = Services.CreateScope();
+
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var clock = scope.ServiceProvider.GetRequiredService<Lubnan.Application.Abstractions.IClock>();
+
+        var user = await db.Users.SingleAsync(u => u.Email == Lubnan.Domain.Users.Email.Create(email).Value)
+            .ConfigureAwait(false);
+
+        user.ConfirmEmail(clock.UtcNow);
+        await db.SaveChangesAsync().ConfigureAwait(false);
     }
 
     public new async Task DisposeAsync()

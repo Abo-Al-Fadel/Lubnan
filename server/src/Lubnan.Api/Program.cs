@@ -2,9 +2,11 @@ using System.Threading.RateLimiting;
 using Lubnan.Api.Extensions;
 using Lubnan.Api.Middleware;
 using Lubnan.Application;
+using Lubnan.Application.Abstractions.Http;
 using Lubnan.Infrastructure;
 using Lubnan.Infrastructure.Persistence.Seed;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Scalar.AspNetCore;
@@ -22,9 +24,35 @@ var connectionString = builder.Configuration.GetConnectionString("Database")
 builder.Services
     .AddApplication()
     .AddInfrastructure(connectionString)
+    .AddAuth(builder.Configuration)
     .AddEndpoints(Lubnan.Application.DependencyInjection.Assembly)
     .AddHealth()
     .AddObservability(builder.Configuration);
+
+// Behind a proxy — Next.js rewrites, a load balancer, a platform router — the
+// connection address is the proxy's. Without this, every session row records
+// one IP and rate limiting partitions everybody into a single bucket.
+//
+// KnownNetworks and KnownProxies are cleared and then repopulated from
+// configuration on purpose: the defaults trust loopback only, and an empty list
+// with ForwardLimit means the header is taken from whoever sent it. Trusting an
+// unauthenticated header is how an attacker spoofs their address to escape a
+// rate limit or to poison an audit log.
+builder.Services.Configure<ForwardedHeadersOptions>(forwarded =>
+{
+    forwarded.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    forwarded.ForwardLimit = 1;
+    forwarded.KnownNetworks.Clear();
+    forwarded.KnownProxies.Clear();
+
+    foreach (var proxy in builder.Configuration.GetSection("KnownProxies").Get<string[]>() ?? [])
+    {
+        if (System.Net.IPAddress.TryParse(proxy, out var address))
+        {
+            forwarded.KnownProxies.Add(address);
+        }
+    }
+});
 
 // Every failure, expected or not, leaves as RFC 7807.
 builder.Services.AddProblemDetails();
@@ -66,23 +94,42 @@ builder.Services.AddCors(options => options.AddPolicy(CorsPolicy, policy => poli
 // Before the second replica exists this must move to a shared counter in
 // Redis. It is recorded here rather than in a document because this is the
 // code that has to change.
+var limits = builder.Configuration.GetSection(RateLimitOptions.SectionName).Get<RateLimitOptions>()
+             ?? new RateLimitOptions();
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
-    options.AddPolicy("read", context => RateLimitPartition.GetFixedWindowLimiter(
+    options.AddPolicy(RateLimits.Read, context => RateLimitPartition.GetFixedWindowLimiter(
         context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-        _ => new FixedWindowRateLimiterOptions { PermitLimit = 300, Window = TimeSpan.FromMinutes(1) }));
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = limits.ReadPermitLimit,
+            Window = TimeSpan.FromMinutes(1),
+        }));
+
+    // Auth is far tighter than write, because the threat is different. A write
+    // limit stops one account flooding a feed; this one stops an
+    // unauthenticated attacker working through a password list, and stops this
+    // API being used as a machine for mailing strangers.
+    options.AddPolicy(RateLimits.Auth, context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = limits.AuthPermitLimit,
+            Window = limits.AuthWindow,
+        }));
 
     // Partitioned by user where there is one, and only by IP otherwise, so a
     // single abusive account cannot hide behind a carrier NAT that thousands
     // of legitimate readers share.
-    options.AddPolicy("write", context => RateLimitPartition.GetTokenBucketLimiter(
+    options.AddPolicy(RateLimits.Write, context => RateLimitPartition.GetTokenBucketLimiter(
         context.User.Identity?.Name ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
         _ => new TokenBucketRateLimiterOptions
         {
-            TokenLimit = 20,
-            TokensPerPeriod = 5,
+            TokenLimit = limits.WriteTokenLimit,
+            TokensPerPeriod = limits.WriteTokensPerPeriod,
             ReplenishmentPeriod = TimeSpan.FromMinutes(1),
             AutoReplenishment = true,
         }));
@@ -130,8 +177,12 @@ if (args.Contains("seed", StringComparer.Ordinal))
     return;
 }
 
+// First, so everything downstream sees the caller's real address and scheme.
+app.UseForwardedHeaders();
+
 app.UseExceptionHandler();
 app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseMiddleware<SecurityHeadersMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
@@ -149,6 +200,17 @@ else
 
 app.UseCors(CorsPolicy);
 app.UseRateLimiter();
+
+// Order matters and is not arbitrary.
+//
+// CSRF before authentication: a forged request should be rejected without the
+// cost of validating its token, and before anything treats it as a user.
+// Authentication before authorization, because a policy cannot check a role
+// on a principal that has not been built yet. Output caching last of the four,
+// so it never serves one reader's private response to another.
+app.UseMiddleware<CsrfMiddleware>();
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseOutputCache();
 
 app.MapEndpoints();
