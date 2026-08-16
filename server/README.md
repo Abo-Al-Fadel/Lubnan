@@ -127,6 +127,12 @@ Each of these is a decision, not an oversight.
 | Startup seeding | Same, plus a seeder that runs automatically eventually runs somewhere it should not. `dotnet run -- seed` | never |
 | French and Arabic copy | It has not been written. Seeding the English body under an `ar` label would serve English prose while claiming otherwise — the response's `locale` field says what was actually served | translation |
 
+The seed is generated from the frontend's editorial data by
+`scripts/export-seed.mjs`, which reads `web/data/destinations.json` and
+`web/data/places.ts`. That is the only coupling between the two halves, it
+exists so eight articles are not typed twice, and it should be deleted on the
+commit that makes this database the source of truth.
+
 ## Verification
 
 ```bash

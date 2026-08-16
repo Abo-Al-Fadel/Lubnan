@@ -2,23 +2,24 @@
 //
 // The frontend is, for now, the source of truth for this copy: it was written
 // there and it renders from there. Rather than retype eight articles into C#
-// and let the two drift, this reads data/destinations.json and data/places.ts
-// and writes one JSON file the seeder embeds.
+// and let the two drift, this reads web/data/destinations.json and
+// web/data/places.ts and writes one JSON file the seeder embeds.
 //
 //   node server/scripts/export-seed.mjs
 //
-// Once phase 2 lands and the web app fetches /api/v1/places, the direction
-// reverses: the database becomes the source and data/destinations.json goes
-// away. This script is the bridge between those two states, and it should be
-// deleted on the commit that removes the JSON.
+// Once the web app fetches /api/v1/places, the direction reverses: the database
+// becomes the source and web/data/destinations.json goes away. This script is
+// the bridge between those two states, and it should be deleted on the commit
+// that removes the JSON.
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const root = join(here, '..', '..');
-const out = join(root, 'server', 'src', 'Lubnan.Infrastructure', 'Persistence', 'Seed', 'places.seed.json');
+const repo = join(here, '..', '..');
+const web = join(repo, 'web');
+const out = join(repo, 'server', 'src', 'Lubnan.Infrastructure', 'Persistence', 'Seed', 'places.seed.json');
 
 /** The frontend spells these in prose; the domain spells them as enum members. */
 const REGIONS = {
@@ -75,7 +76,7 @@ function liftObjectLiteral(source, declaration) {
 
 // Several of these files were written on Windows and carry a byte-order mark,
 // which JSON.parse treats as a syntax error rather than as whitespace.
-const read = (...parts) => readFileSync(join(root, ...parts), 'utf8').replace(/^﻿/, '');
+const read = (...parts) => readFileSync(join(web, ...parts), 'utf8').replace(/^﻿/, '');
 
 const destinations = JSON.parse(read('data', 'destinations.json'));
 const extra = liftObjectLiteral(read('data', 'places.ts'), 'const extra');
