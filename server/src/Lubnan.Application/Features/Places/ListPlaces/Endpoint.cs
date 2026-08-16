@@ -23,13 +23,25 @@ internal sealed class Endpoint : IEndpoint
             ISender sender,
             CancellationToken cancellationToken) =>
         {
-            var query = new Query(http.ResolveLocale(locale), region, category);
-            return (await sender.Send(query, cancellationToken)).ToHttpResult();
+            var resolved = http.ResolveLocale(locale);
+            var result = await sender.Send(new Query(resolved, region, category), cancellationToken);
+
+            // Card copy falls back per row, so a mixed list is possible. The
+            // requested locale is the honest single answer for the collection;
+            // a client needing per-item precision reads the detail endpoint,
+            // which reports exactly what it served.
+            if (result.IsSuccess)
+            {
+                http.SetContentLanguage(resolved.Code);
+            }
+
+            return result.ToHttpResult();
         })
         .WithName("ListPlaces")
         .WithSummary("Published destinations, in editorial order.")
         .WithTags("Places")
         .Produces<IReadOnlyList<PlaceSummary>>()
         .ProducesValidationProblem()
+        .RequireRateLimiting("read")
         .CacheOutput("places");
 }

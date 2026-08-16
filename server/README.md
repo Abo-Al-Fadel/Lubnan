@@ -39,7 +39,8 @@ Four small files, one folder, one behaviour. Nothing to navigate.
 server/
 ├─ Directory.Build.props        settings every project inherits
 ├─ Directory.Packages.props     every package version, in one file
-├─ docker-compose.yml           postgres, and nothing that is not used yet
+├─ Dockerfile                   multi-stage, non-root, ICU for Arabic
+├─ docker-compose.yml           postgres always; api behind the "full" profile
 ├─ scripts/export-seed.mjs      frontend editorial data -> seed JSON
 │
 ├─ src/
@@ -56,8 +57,9 @@ server/
 │  └─ Lubnan.Api/               composition root: ~150 lines, all of it wiring
 │
 └─ tests/
-   ├─ Lubnan.Domain.Tests/      pure, no host, milliseconds
-   └─ Lubnan.Architecture.Tests the rules above, as failing builds
+   ├─ Lubnan.Domain.Tests/          pure, no host, milliseconds
+   ├─ Lubnan.Architecture.Tests/    the rules above, as failing builds
+   └─ Lubnan.Api.IntegrationTests/  the real host, a real PostgreSQL
 ```
 
 ### The dependency direction
@@ -123,6 +125,7 @@ Each of these is a decision, not an oversight.
 | Redis | Rate limits count in process memory. Correct for one instance, wrong for two — see the comment in `Program.cs` | the second replica |
 | MinIO / S3 | No uploads yet | community posts |
 | A mediator package | The obvious one moved to a paid licence for commercial use. `Sender.cs` is sixty lines and explains itself | never |
+| An in-memory EF provider in tests | It has none of Postgres's types, constraints or query translation, so a suite built on it is green about a database nobody runs | never |
 | Startup migrations | Two replicas starting together race. `dotnet ef database update` is a deploy step | never |
 | Startup seeding | Same, plus a seeder that runs automatically eventually runs somewhere it should not. `dotnet run -- seed` | never |
 | French and Arabic copy | It has not been written. Seeding the English body under an `ar` label would serve English prose while claiming otherwise — the response's `locale` field says what was actually served | translation |
@@ -133,12 +136,60 @@ The seed is generated from the frontend's editorial data by
 exists so eight articles are not typed twice, and it should be deleted on the
 commit that makes this database the source of truth.
 
+## The container
+
+```bash
+docker compose --profile full up -d --build   # api + postgres, as they deploy
+curl http://localhost:5080/api/v1/places
+```
+
+Three things in the Dockerfile are worth knowing about, because each is a bug
+that appears only in the image and never on your machine:
+
+**The project files are copied and restored before the source is.** Docker
+caches a layer until one of its inputs changes, and dependencies change far
+less often than code does. Copy everything up front and editing one handler
+re-downloads the entire NuGet graph.
+
+**`icu-libs` is installed explicitly.** Alpine ships without ICU and .NET
+silently falls back to invariant globalization, which breaks culture-aware
+comparison and formatting. This application serves Arabic and French, so that
+fallback is not survivable — and it produces wrong output rather than an error.
+
+**It runs as a non-root user that does not own its own binaries.** The default
+is root, and a root process that escapes its namespace is root on the host.
+There is no reason for a web API to be able to overwrite its own DLLs.
+
+The healthcheck hits `/health/live`, not `/health/ready`. A container that
+calls itself unhealthy because Postgres blinked gets restarted, which turns a
+thirty-second database failover into a restart loop across every replica.
+Readiness is the orchestrator's question, not the container's.
+
 ## Verification
 
 ```bash
-dotnet test                                    # 41 tests: domain rules + architecture rules
-dotnet build -p:ContinuousIntegrationBuild=true    # warnings become errors, as in CI
+dotnet test                                      # 55 tests, three suites
+dotnet build -p:ContinuousIntegrationBuild=true  # warnings become errors, as in CI
 ```
+
+| Suite | What it proves | Needs |
+| --- | --- | --- |
+| `Lubnan.Domain.Tests` | the rules the aggregate enforces | nothing |
+| `Lubnan.Architecture.Tests` | the dependency direction still holds | nothing |
+| `Lubnan.Api.IntegrationTests` | HTTP in, PostgreSQL and back | Docker |
+
+The integration tests start a **disposable PostgreSQL per run** with
+Testcontainers, apply the migration, seed through the domain, and drive the
+real host. Nothing is stubbed. The alternatives are an in-memory provider,
+which has none of Postgres's types, constraints or query translation and so
+cannot catch the bugs that actually happen, or a shared development database,
+which makes the suite order-dependent and fails for whoever runs it second.
+
+The response DTOs are **written out again** in the test project rather than
+referenced from `Lubnan.Application`. The duplication is the point: a client
+sharing types with its server cannot detect a breaking change, because renaming
+a property on both sides at once leaves every test green and every real
+consumer broken.
 
 CI additionally asserts that the migrations match the model
 (`ef migrations has-pending-model-changes`) and that the seed file matches the
@@ -165,9 +216,5 @@ fallback (a request for `ar` returns English **and reports `"locale": "en"`**,
 so a client can mark the page untranslated), and a 404 with a stable
 `place.notFound` code for an unknown slug.
 
-### What still has not been run
-
-**Automated integration tests.** Everything above was verified by hand. The next
-piece of real work is `Lubnan.Api.IntegrationTests` with Testcontainers, so a
-disposable Postgres comes up per test run and none of this depends on somebody
-remembering to check. That should exist before a third slice is written.
+All of it is now asserted by `Lubnan.Api.IntegrationTests` rather than checked
+by hand, so it stays true without anybody remembering to look.

@@ -18,8 +18,18 @@ internal sealed class Endpoint : IEndpoint
             ISender sender,
             CancellationToken cancellationToken) =>
         {
-            var query = new Query(slug, http.ResolveLocale(locale));
-            return (await sender.Send(query, cancellationToken)).ToHttpResult();
+            var result = await sender.Send(new Query(slug, http.ResolveLocale(locale)), cancellationToken);
+
+            // From what was served, not from what was asked for. A place with
+            // no Arabic copy answers an Arabic request in English, and the
+            // header has to say English or it is describing a body that does
+            // not exist.
+            if (result.IsSuccess)
+            {
+                http.SetContentLanguage(result.Value.Locale);
+            }
+
+            return result.ToHttpResult();
         })
         .WithName("GetPlaceBySlug")
         .WithSummary("One destination, resolved to a single language.")
@@ -27,5 +37,6 @@ internal sealed class Endpoint : IEndpoint
         .Produces<PlaceDetail>()
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesValidationProblem()
+        .RequireRateLimiting("read")
         .CacheOutput("places");
 }

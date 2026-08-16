@@ -16,10 +16,19 @@ public static class LocaleResolution
     /// they share must land the recipient on the language they were reading,
     /// not on the recipient's browser default.
     /// <para>
-    /// Whatever wins is echoed in <c>Content-Language</c> and added to
-    /// <c>Vary</c>, so a cache cannot serve the French copy to the next reader
-    /// asking for Arabic. That omission is the classic i18n caching bug and it
-    /// only appears once there is a CDN in front.
+    /// <c>Vary: Accept-Language</c> is set here, so a cache cannot hand the
+    /// French copy to the next reader asking for Arabic. That omission is the
+    /// classic i18n caching bug and it only shows up once there is a CDN in
+    /// front of the origin.
+    /// </para>
+    /// <para>
+    /// <c>Content-Language</c> is deliberately <em>not</em> set here. It
+    /// describes the language of the body, and this method runs before the
+    /// handler — so it cannot know whether the copy actually exists. Setting it
+    /// to the requested locale would mean answering an Arabic request with
+    /// English prose labelled <c>ar</c>, which misleads caches, translation
+    /// tooling and screen readers alike. Each endpoint sets it from what it
+    /// really served; see <see cref="SetContentLanguage"/>.
     /// </para>
     /// </remarks>
     public static Locale ResolveLocale(this HttpRequest request, string? explicitLocale = null)
@@ -28,12 +37,17 @@ public static class LocaleResolution
             ? fromQuery
             : ResolveFromHeader(request);
 
-        var response = request.HttpContext.Response;
-        response.Headers.ContentLanguage = resolved.Code;
-        response.Headers.Append("Vary", "Accept-Language");
+        request.HttpContext.Response.Headers.Append("Vary", "Accept-Language");
 
         return resolved;
     }
+
+    /// <summary>
+    /// Declares the language the body is actually written in, which is not
+    /// always the one that was asked for.
+    /// </summary>
+    public static void SetContentLanguage(this HttpRequest request, string localeCode) =>
+        request.HttpContext.Response.Headers.ContentLanguage = localeCode;
 
     private static Locale ResolveFromHeader(HttpRequest request)
     {

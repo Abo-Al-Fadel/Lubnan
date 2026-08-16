@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Lubnan.Api\Lubnan.Api.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      WebApplicationFactory boots the real host in-process, so this project
+      needs the ASP.NET Core framework the same way the API does. Without it,
+      Microsoft.AspNetCore.Mvc.Testing reports itself incompatible with the
+      target framework, which is a confusing way of saying "this is not a web
+      project".
+    -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector" />
+  </ItemGroup>
+
+</Project>

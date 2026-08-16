@@ -9,10 +9,14 @@
 #   minio    with presigned uploads
 #   otel     when there is a trace worth reading
 #
-#   docker compose up -d
-#   dotnet ef database update --project src/Lubnan.Infrastructure
-#   dotnet run --project src/Lubnan.Api -- seed
-#   dotnet run --project src/Lubnan.Api
+# Two ways to run it:
+#
+#   docker compose up -d                        postgres only, API from `dotnet run`
+#   docker compose --profile full up -d --build  both, as they deploy
+#
+# The first is the development loop: rebuilding an image on every code change
+# would add a minute to an edit that takes a second. The second is the one that
+# proves the container actually works, and is what CI runs.
 
 services:
   postgres:
@@ -47,6 +51,28 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  api:
+    profiles: ["full"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lubnan-api
+    depends_on:
+      postgres:
+        # Not just "started". Postgres accepts a TCP connection several seconds
+        # before it will answer a query, so waiting on the container rather than
+        # on the healthcheck means the API's first connection fails and the
+        # whole stack looks broken on a cold start.
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      # The service name, and the *internal* port. 5433 is a host-side detail
+      # that does not exist on this network.
+      ConnectionStrings__Database: "Host=postgres;Port=5432;Database=lubnan;Username=lubnan;Password=lubnan"
+      Cors__Origins__0: "http://localhost:3000"
+    ports:
+      - "5080:8080"
 
 volumes:
   postgres-data:

@@ -1,0 +1,13 @@
+# Everything here would be copied into the build context and then thrown away.
+# bin/ and obj/ are the expensive ones: they hold the host's build output, they
+# are large, and copying them in lets a stale artefact from a developer's
+# machine end up in the image.
+**/bin/
+**/obj/
+**/.vs/
+**/*.user
+
+Dockerfile
+.dockerignore
+docker-compose.yml
+README.md

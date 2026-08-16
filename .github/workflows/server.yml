@@ -34,8 +34,35 @@ jobs:
       - name: Build
         run: dotnet build --no-restore --configuration Release
 
+      # Domain, architecture and integration. The last of these starts a real
+      # PostgreSQL through Testcontainers — GitHub's Ubuntu runners have a
+      # Docker daemon, so nothing extra is needed here.
       - name: Test
         run: dotnet test --no-build --configuration Release --verbosity normal
+
+      # The image has to build, and it has to build from a clean context rather
+      # than from whatever is in bin/ on somebody's machine. A Dockerfile that
+      # only works locally is a Dockerfile that fails on the day you deploy.
+      - name: Build the image
+        run: docker build -t lubnan-api:ci -f Dockerfile .
+
+      # And it has to start, connect to a database and answer. Building proves
+      # it compiles; this proves it runs as a non-root user on the port it
+      # claims, with globalization working.
+      - name: The image starts and serves
+        run: |
+          docker compose --profile full up -d --build
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:5080/health/ready > /dev/null; then
+              echo "ready after ${i}s"; exit 0
+            fi
+            sleep 1
+          done
+          echo "never became ready"; docker compose logs api; exit 1
+
+      - name: Stop
+        if: always()
+        run: docker compose --profile full down -v
 
       # A migration that does not match the model means somebody changed an
       # entity and did not scaffold. It fails here rather than at deploy, where
