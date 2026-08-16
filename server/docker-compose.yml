@@ -27,7 +27,16 @@ services:
       # so does the set of rows a range query returns.
       POSTGRES_INITDB_ARGS: "--locale=C --encoding=UTF8"
     ports:
-      - "5432:5432"
+      # 5433 on the host, not 5432, deliberately.
+      #
+      # A container should not squat on the canonical port. Anyone who has ever
+      # installed PostgreSQL natively — which the EDB installer does when you
+      # want pgAdmin — already has a service on 5432, and the collision is
+      # silent: Docker quietly binds IPv6 only, `localhost` resolves to IPv4
+      # first, and your connection lands on the *other* database. The error you
+      # get is "password authentication failed", which sends you looking at
+      # credentials that were never wrong.
+      - "5433:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:

@@ -10,6 +10,14 @@ dotnet run --project src/Lubnan.Api -- seed
 dotnet run --project src/Lubnan.Api          # http://localhost:5080/scalar/v1
 ```
 
+> **The container publishes Postgres on host port 5433, not 5432.** A container
+> should not squat on the canonical port: anyone who has installed PostgreSQL
+> natively — which is what happens when you install pgAdmin from the EDB
+> bundle — already has a service there, and the collision is silent. Docker
+> binds IPv6 only, `localhost` resolves to IPv4 first, and your connection
+> lands on the other database. The error is `password authentication failed`,
+> which sends you looking at credentials that were never wrong.
+
 ## Why the folders look like this
 
 Organised by **feature**, not by technical role. The instinct on a portfolio
@@ -131,16 +139,29 @@ CI additionally asserts that the migrations match the model
 frontend data it is generated from. Both are drifts that are invisible until
 they are expensive.
 
-### What has not been run
+### Run against a real database
 
-There is no PostgreSQL on the machine this was written on, so the migration has
-been **generated and rendered to SQL but never applied**, and no query has hit a
-real database. The EF model itself is validated — generating a migration builds
-the whole model, which is what caught the backing-field and complex-type
-problems along the way — and the API has been run: endpoint discovery, the
-validation pipeline, locale negotiation, the error shape, correlation ids, the
-health split and OpenAPI generation all verified against a live process.
+The migration applies, the seed loads through the domain, and both endpoints
+answer from Postgres 17 in the container:
 
-Everything below the query layer needs `docker compose up` and a run of the
-integration tests that do not exist yet. That is the first task of the next
-session, and it should happen before any second slice is written.
+```
+8 places, 24 callouts, 32 practical facts, 8 outbox rows
+```
+
+The outbox count is the one to look at. Eight `PlacePublished` events were
+drained onto the outbox table by `DomainEventInterceptor` inside the same
+transaction as the inserts — which is the whole pattern, demonstrated rather
+than described.
+
+Also confirmed against live data: editorial ordering, region and category
+filtering, callout coordinates surviving the `jsonb` round trip, the locale
+fallback (a request for `ar` returns English **and reports `"locale": "en"`**,
+so a client can mark the page untranslated), and a 404 with a stable
+`place.notFound` code for an unknown slug.
+
+### What still has not been run
+
+**Automated integration tests.** Everything above was verified by hand. The next
+piece of real work is `Lubnan.Api.IntegrationTests` with Testcontainers, so a
+disposable Postgres comes up per test run and none of this depends on somebody
+remembering to check. That should exist before a third slice is written.

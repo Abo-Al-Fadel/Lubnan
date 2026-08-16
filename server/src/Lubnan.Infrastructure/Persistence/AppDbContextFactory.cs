@@ -18,8 +18,11 @@ namespace Lubnan.Infrastructure.Persistence;
 /// </remarks>
 internal sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 {
+    // Port 5433: the container publishes there so it cannot collide with a
+    // natively installed PostgreSQL, which owns 5432 on most machines that
+    // have ever run the EDB installer. See docker-compose.yml.
     private const string Fallback =
-        "Host=localhost;Port=5432;Database=lubnan;Username=lubnan;Password=lubnan";
+        "Host=localhost;Port=5433;Database=lubnan;Username=lubnan;Password=lubnan";
 
     public AppDbContext CreateDbContext(string[] args)
     {
