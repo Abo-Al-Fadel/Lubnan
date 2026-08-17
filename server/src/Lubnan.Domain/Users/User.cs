@@ -45,6 +45,13 @@ public sealed class User : AggregateRoot
     /// <summary>How long a locked account stays locked.</summary>
     public static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
 
+    /// <summary>
+    /// How long to wait before mailing the owner about another registration
+    /// attempt. The HTTP response stays identical either way; this only
+    /// stops a known address being used as a mailbox cannon.
+    /// </summary>
+    public static readonly TimeSpan RegistrationAttemptNotice = TimeSpan.FromHours(12);
+
     private readonly List<UserSession> _sessions = [];
     private readonly List<AccountEvent> _accountEvents = [];
     private readonly List<UserToken> _tokens = [];
@@ -295,6 +302,18 @@ public sealed class User : AggregateRoot
     /// </summary>
     public void NoteRegistrationAttempt(DateTimeOffset now)
     {
+        var last = _accountEvents
+            .Where(e => e.Type == AccountEventType.RegistrationReattempted)
+            .Select(e => e.OccurredAt)
+            .DefaultIfEmpty()
+            .Max();
+
+        if (last != default && now - last < RegistrationAttemptNotice)
+        {
+            return;
+        }
+
+        Record(AccountEventType.RegistrationReattempted, now);
         Raise(new UserRegistrationReattempted(Id, Email.Value) { OccurredAt = now });
     }
 

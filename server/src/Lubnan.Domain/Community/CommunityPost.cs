@@ -70,6 +70,13 @@ public sealed class CommunityPost : AggregateRoot
                 $"A post is between {BodyMinLength} and {BodyMaxLength} characters."));
         }
 
+        if (TextRules.HasForbiddenMarks(text))
+        {
+            return Result.Failure<CommunityPost>(Error.Validation(
+                "post.body.characters",
+                "A post cannot contain formatting or control characters."));
+        }
+
         string? slug = null;
         if (!string.IsNullOrWhiteSpace(placeSlug))
         {
@@ -133,6 +140,13 @@ public sealed class CommunityPost : AggregateRoot
             return Result.Failure<PostComment>(Error.Validation(
                 "comment.body.length",
                 $"A comment is between {PostComment.MinLength} and {PostComment.MaxLength} characters."));
+        }
+
+        if (TextRules.HasForbiddenMarks(text))
+        {
+            return Result.Failure<PostComment>(Error.Validation(
+                "comment.body.characters",
+                "A comment cannot contain formatting or control characters."));
         }
 
         var comment = new PostComment(Guid.NewGuid(), Id, authorId, text, now);

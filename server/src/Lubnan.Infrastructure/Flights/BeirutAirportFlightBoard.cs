@@ -16,41 +16,54 @@ internal sealed class BeirutAirportFlightBoard(HttpClient http, IClock clock) : 
     private static readonly TimeSpan FallbackFor = TimeSpan.FromSeconds(30);
     private const int MaxBytes = 1_000_000;
 
-    private readonly object _gate = new();
-    private FlightBoardDto? _cached;
-    private DateTimeOffset _until;
+    // Typed HttpClient is transient. The board must live across instances
+    // or every /flights request scrapes the airport twice.
+    private static readonly SemaphoreSlim Refresh = new(1, 1);
+    private static readonly object Gate = new();
+    private static FlightBoardDto? Cached;
+    private static DateTimeOffset Until;
 
     public async Task<FlightBoardDto> GetAsync(CancellationToken cancellationToken)
     {
-        var now = clock.UtcNow;
-        lock (_gate)
+        if (TryHit(clock.UtcNow, out var hit))
         {
-            if (_cached is not null && now < _until)
-            {
-                return _cached;
-            }
+            return hit;
         }
 
-        FlightBoardDto next;
+        await Refresh.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var arrivals = await ReadAsync(ArrivalsPath, cancellationToken).ConfigureAwait(false);
-            var departures = await ReadAsync(DeparturesPath, cancellationToken).ConfigureAwait(false);
-            if (arrivals.Count == 0 && departures.Count == 0)
+            var now = clock.UtcNow;
+            if (TryHit(now, out hit))
             {
-                throw new InvalidOperationException("The airport page had no flight rows.");
+                return hit;
             }
 
-            next = new FlightBoardDto(true, now, arrivals, departures);
-            Store(next, now + LiveFor);
-        }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or InvalidOperationException)
-        {
-            next = FallbackSchedule.Board(now);
-            Store(next, now + FallbackFor);
-        }
+            FlightBoardDto next;
+            try
+            {
+                var arrivals = await ReadAsync(ArrivalsPath, cancellationToken).ConfigureAwait(false);
+                var departures = await ReadAsync(DeparturesPath, cancellationToken).ConfigureAwait(false);
+                if (arrivals.Count == 0 && departures.Count == 0)
+                {
+                    throw new InvalidOperationException("The airport page had no flight rows.");
+                }
 
-        return next;
+                next = new FlightBoardDto(true, now, arrivals, departures);
+                Store(next, now + LiveFor);
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or InvalidOperationException)
+            {
+                next = FallbackSchedule.Board(now);
+                Store(next, now + FallbackFor);
+            }
+
+            return next;
+        }
+        finally
+        {
+            Refresh.Release();
+        }
     }
 
     private async Task<IReadOnlyList<FlightRowDto>> ReadAsync(string path, CancellationToken cancellationToken)
@@ -74,12 +87,27 @@ internal sealed class BeirutAirportFlightBoard(HttpClient http, IClock clock) : 
         return FlightHtmlParser.Parse(html);
     }
 
-    private void Store(FlightBoardDto value, DateTimeOffset until)
+    private static bool TryHit(DateTimeOffset now, out FlightBoardDto hit)
     {
-        lock (_gate)
+        lock (Gate)
         {
-            _cached = value;
-            _until = until;
+            if (Cached is not null && now < Until)
+            {
+                hit = Cached;
+                return true;
+            }
+        }
+
+        hit = null!;
+        return false;
+    }
+
+    private static void Store(FlightBoardDto value, DateTimeOffset until)
+    {
+        lock (Gate)
+        {
+            Cached = value;
+            Until = until;
         }
     }
 }

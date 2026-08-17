@@ -66,7 +66,26 @@ internal sealed class Handler(IAppDbContext db, ICurrentUser currentUser, IClock
         }
 
         db.SavedPlaces.Add(saved);
-        await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (DbUpdateException)
+        {
+            var raced = await db.SavedPlaces
+                .AsNoTracking()
+                .FirstOrDefaultAsync(
+                    s => s.UserId == userId && s.PlaceSlug == saved.PlaceSlug,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+            if (raced is null)
+            {
+                throw;
+            }
+
+            return Result.Success(new SavedPlaceDto(raced.PlaceSlug, raced.CreatedAt));
+        }
 
         return Result.Success(new SavedPlaceDto(saved.PlaceSlug, saved.CreatedAt));
     }

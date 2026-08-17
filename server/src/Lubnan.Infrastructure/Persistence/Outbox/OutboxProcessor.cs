@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Lubnan.Application.Abstractions;
 using Lubnan.Application.Abstractions.Security;
+using Lubnan.Domain.Places.Events;
 using Lubnan.Domain.Users;
 using Lubnan.Domain.Users.Events;
 using Microsoft.EntityFrameworkCore;
@@ -77,7 +78,7 @@ internal sealed class OutboxProcessor(
         var auth = scope.ServiceProvider.GetRequiredService<IOptions<AuthOptions>>().Value;
 
         var pending = await db.OutboxMessages
-            .Where(m => m.ProcessedAt == null)
+            .Where(m => m.ProcessedAt == null && m.Attempts < _options.MaxAttempts)
             .OrderBy(m => m.OccurredAt)
             .Take(20)
             .ToListAsync(cancellationToken)
@@ -87,8 +88,16 @@ internal sealed class OutboxProcessor(
         {
             try
             {
-                await Dispatch(message, db, mail, tokens, clock, auth, cancellationToken)
+                var handled = await Dispatch(message, db, mail, tokens, clock, auth, cancellationToken)
                     .ConfigureAwait(false);
+                if (!handled)
+                {
+                    message.Attempts++;
+                    message.Error = $"No consumer for {message.Type}";
+                    logger.UnknownType(message.Id, message.Type);
+                    continue;
+                }
+
                 message.ProcessedAt = clock.UtcNow;
                 message.Error = null;
             }
@@ -106,7 +115,25 @@ internal sealed class OutboxProcessor(
         }
     }
 
-    private static async Task Dispatch(
+    private static readonly HashSet<string> Silent = new(StringComparer.Ordinal)
+    {
+        typeof(UserEmailConfirmed).FullName!,
+        typeof(UserEmailChanged).FullName!,
+        typeof(UserPasswordChanged).FullName!,
+        typeof(UserLockedOut).FullName!,
+        typeof(UserSignedOutEverywhere).FullName!,
+        typeof(RefreshTokenReuseDetected).FullName!,
+        typeof(UserSuspended).FullName!,
+        typeof(UserReinstated).FullName!,
+        typeof(UserDeletionRequested).FullName!,
+        typeof(UserDeletionCancelled).FullName!,
+        typeof(UserAnonymised).FullName!,
+        typeof(PlacePublished).FullName!,
+        typeof(PlaceUnpublished).FullName!,
+        typeof(PlaceTranslationRevised).FullName!,
+    };
+
+    private static async Task<bool> Dispatch(
         OutboxMessage message,
         AppDbContext db,
         IEmailSender mail,
@@ -121,28 +148,49 @@ internal sealed class OutboxProcessor(
                       ?? throw new InvalidOperationException("UserRegistered payload did not deserialise.");
             await SendConfirmation(evt.UserId, evt.Email, evt.DisplayName, db, mail, tokens, clock, auth, cancellationToken)
                 .ConfigureAwait(false);
-            return;
+            return true;
         }
 
         if (message.Type == typeof(UserRegistrationReattempted).FullName)
         {
             var evt = JsonSerializer.Deserialize<UserRegistrationReattempted>(message.Payload, Json)
                       ?? throw new InvalidOperationException("UserRegistrationReattempted payload did not deserialise.");
-            await mail.SendAsync(
-                    new OutgoingEmail(
-                        evt.Email,
-                        "Someone tried to register with this address",
-                        $"""
-                        Someone just tried to create a Lubnān account with {evt.Email}.
 
-                        If that was you, sign in instead:
-                        {auth.WebBaseUrl.TrimEnd('/')}/login
-
-                        If it was not you, you can ignore this. Nobody else can use this address to open an account.
-                        """),
+            var since = clock.UtcNow - User.RegistrationAttemptNotice;
+            var needle = $"\"email\":\"{evt.Email}\"";
+            var already = await db.OutboxMessages
+                .AsNoTracking()
+                .AnyAsync(
+                    m => m.Id != message.Id
+                         && m.Type == message.Type
+                         && m.ProcessedAt != null
+                         && m.ProcessedAt >= since
+                         && m.Payload.Contains(needle),
                     cancellationToken)
                 .ConfigureAwait(false);
+
+            if (!already)
+            {
+                await mail.SendAsync(
+                        new OutgoingEmail(
+                            evt.Email,
+                            "Someone tried to register with this address",
+                            $"""
+                            Someone just tried to create a Lubnān account with {evt.Email}.
+
+                            If that was you, sign in instead:
+                            {auth.WebBaseUrl.TrimEnd('/')}/login
+
+                            If it was not you, you can ignore this. Nobody else can use this address to open an account.
+                            """),
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            return true;
         }
+
+        return Silent.Contains(message.Type);
     }
 
     private static async Task SendConfirmation(
@@ -196,4 +244,7 @@ internal static partial class OutboxProcessorMessages
 
     [LoggerMessage(EventId = 4101, Level = LogLevel.Warning, Message = "Outbox message {MessageId} ({Type}) failed")]
     public static partial void MessageFailed(this ILogger logger, Exception exception, Guid messageId, string type);
+
+    [LoggerMessage(EventId = 4102, Level = LogLevel.Error, Message = "Outbox message {MessageId} has no consumer ({Type})")]
+    public static partial void UnknownType(this ILogger logger, Guid messageId, string type);
 }

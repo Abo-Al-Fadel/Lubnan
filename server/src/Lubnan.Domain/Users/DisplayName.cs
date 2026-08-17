@@ -1,4 +1,3 @@
-using System.Buffers;
 using System.Globalization;
 using Lubnan.Domain.Common;
 
@@ -23,14 +22,6 @@ public sealed class DisplayName : ValueObject
     public const int MinLength = 2;
     public const int MaxLength = 40;
 
-    // Explicit directional formatting. Arabic does not need these to render
-    // correctly; the Unicode bidi algorithm handles real text on its own.
-    private static readonly SearchValues<char> BidiOverrides = SearchValues.Create(
-    [
-        '‪', '‫', '‬', '‭', '‮',
-        '⁦', '⁧', '⁨', '⁩',
-    ]);
-
     private DisplayName(string value) => Value = value;
 
     public string Value { get; }
@@ -48,7 +39,7 @@ public sealed class DisplayName : ValueObject
                 "displayName.length", $"A display name is between {MinLength} and {MaxLength} characters."));
         }
 
-        if (candidate.Any(char.IsControl) || candidate.AsSpan().IndexOfAny(BidiOverrides) >= 0)
+        if (TextRules.HasForbiddenMarks(candidate))
         {
             return Result.Failure<DisplayName>(Error.Validation(
                 "displayName.characters", "A display name cannot contain formatting or control characters."));

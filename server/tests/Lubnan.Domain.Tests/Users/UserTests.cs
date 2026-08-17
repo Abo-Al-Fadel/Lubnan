@@ -47,5 +47,26 @@ public sealed class UserTests
         user.NoteRegistrationAttempt(Now.AddSeconds(1));
 
         Assert.Single(user.DomainEvents.OfType<UserRegistrationReattempted>());
+        Assert.Contains(user.AccountEvents, e => e.Type == AccountEventType.RegistrationReattempted);
+    }
+
+    [Fact]
+    public void A_registration_attempt_inside_the_pause_is_silent()
+    {
+        var user = Reader();
+        user.NoteRegistrationAttempt(Now.AddSeconds(1));
+        user.NoteRegistrationAttempt(Now.AddHours(1));
+
+        Assert.Single(user.DomainEvents.OfType<UserRegistrationReattempted>());
+    }
+
+    [Fact]
+    public void A_registration_attempt_after_the_pause_is_noticed()
+    {
+        var user = Reader();
+        user.NoteRegistrationAttempt(Now.AddSeconds(1));
+        user.NoteRegistrationAttempt(Now.AddHours(13));
+
+        Assert.Equal(2, user.DomainEvents.OfType<UserRegistrationReattempted>().Count());
     }
 }

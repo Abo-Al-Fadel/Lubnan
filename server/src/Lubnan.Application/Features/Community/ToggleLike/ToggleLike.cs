@@ -40,7 +40,30 @@ internal sealed class Handler(IAppDbContext db, ICurrentUser currentUser, IClock
             return Result.Failure<LikeStateDto>(change.Error);
         }
 
-        await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (DbUpdateException)
+        {
+            var raced = await db.CommunityPosts
+                .AsNoTracking()
+                .Where(p => p.Id == command.PostId)
+                .Select(p => new
+                {
+                    Liked = p.Likes.Any(l => l.UserId == userId),
+                    Count = p.Likes.Count,
+                })
+                .FirstOrDefaultAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            if (raced is null)
+            {
+                throw;
+            }
+
+            return Result.Success(new LikeStateDto(raced.Liked, raced.Count));
+        }
 
         var nowLiked = post.Likes.Any(l => l.UserId == userId);
         return Result.Success(new LikeStateDto(nowLiked, post.Likes.Count));

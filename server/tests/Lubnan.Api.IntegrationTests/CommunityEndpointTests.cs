@@ -91,6 +91,18 @@ public sealed class CommunityEndpointTests(LubnanApiFactory factory)
     }
 
     [Fact]
+    public async Task A_region_filter_only_returns_that_region()
+    {
+        var feed = await Client
+            .GetFromJsonAsync<List<PostDto>>("/api/v1/community/posts?region=Bekaa", Json)
+            .ConfigureAwait(true);
+
+        Assert.NotNull(feed);
+        Assert.NotEmpty(feed);
+        Assert.All(feed, post => Assert.Equal("Bekaa", post.Region));
+    }
+
+    [Fact]
     public async Task The_body_cannot_choose_another_author()
     {
         var (client, csrf) = await SignInAsync().ConfigureAwait(true);

@@ -29,6 +29,15 @@ public sealed class CommunityPostTests
     }
 
     [Fact]
+    public void Publish_refuses_a_bidi_override()
+    {
+        var post = CommunityPost.Publish(Author, "Hello \u202Eworld", null, null, Now);
+
+        Assert.True(post.IsFailure);
+        Assert.Equal("post.body.characters", post.Error.Code);
+    }
+
+    [Fact]
     public void A_person_can_like_a_post_only_once()
     {
         var post = CommunityPost.Publish(Author, "Byblos harbour still works.", "byblos", null, Now).Value;

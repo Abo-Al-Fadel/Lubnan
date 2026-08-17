@@ -10,10 +10,10 @@ namespace Lubnan.Application.Abstractions;
 /// What a slice is allowed to see of the database.
 /// </summary>
 /// <remarks>
-/// Deliberately the aggregate roots and <c>SaveChangesAsync</c>, and nothing
-/// else. No <c>Database</c> property, so a handler cannot open its own
-/// transaction behind the pipeline's back or run raw SQL that the architecture
-/// tests cannot see.
+/// Deliberately the aggregate roots, <c>SaveChangesAsync</c>, and
+/// <c>Untrack</c> for a failed insert. No <c>Database</c> property, so a
+/// handler cannot open its own transaction behind the pipeline's back or run
+/// raw SQL that the architecture tests cannot see.
 /// <para>
 /// <see cref="UserSession"/>, <see cref="UserToken"/> and
 /// <see cref="AccountEvent"/> are absent on purpose. They live inside the
@@ -35,4 +35,9 @@ public interface IAppDbContext
     DbSet<SavedPlace> SavedPlaces { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Drop a failed insert so a follow-up save does not retry it.
+    /// </summary>
+    void Untrack(object entity);
 }

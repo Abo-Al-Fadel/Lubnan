@@ -75,6 +75,7 @@ internal sealed class Handler(
         var passwordHash = passwords.Hash(command.Password);
 
         var existing = await db.Users
+            .Include(u => u.AccountEvents.Where(e => e.Type == AccountEventType.RegistrationReattempted))
             .FirstOrDefaultAsync(u => u.Email == email.Value, cancellationToken)
             .ConfigureAwait(false);
 
@@ -114,20 +115,25 @@ internal sealed class Handler(
         catch (DbUpdateException)
         {
             // The unique index on email is the real guard against two requests
-            // racing. Any other failure still surfaces: if the address is now
-            // there this was the race, and we answer the same way; if not,
-            // something else broke and the caller should see it.
-            var taken = await db.Users
-                .AsNoTracking()
-                .AnyAsync(u => u.Email == email.Value, cancellationToken)
+            // racing. The loser still gets the same HTTP success as a new
+            // signup — anything else would be an enumeration oracle. Drop the
+            // failed insert, then treat this as a re-attempt so the owner
+            // is told.
+            db.Untrack(user.Value);
+
+            var winner = await db.Users
+                .Include(u => u.AccountEvents.Where(e => e.Type == AccountEventType.RegistrationReattempted))
+                .FirstOrDefaultAsync(u => u.Email == email.Value, cancellationToken)
                 .ConfigureAwait(false);
 
-            if (taken)
+            if (winner is null)
             {
-                return Result.Success();
+                throw;
             }
 
-            throw;
+            winner.NoteRegistrationAttempt(now);
+            await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return Result.Success();
         }
 
         // The confirmation mail is sent by a consumer of UserRegistered, from

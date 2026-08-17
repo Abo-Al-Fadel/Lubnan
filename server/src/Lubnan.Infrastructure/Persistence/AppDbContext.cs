@@ -31,6 +31,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
     internal DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
+    public void Untrack(object entity) => Entry(entity).State = EntityState.Detached;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);

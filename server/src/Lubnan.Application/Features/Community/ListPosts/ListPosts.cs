@@ -36,8 +36,21 @@ internal sealed class Handler(IAppDbContext db, ICurrentUser currentUser)
 
         var viewer = currentUser.Id;
 
-        var rows = await db.CommunityPosts
-            .AsNoTracking()
+        var feedQuery = db.CommunityPosts.AsNoTracking();
+        if (region is not null)
+        {
+            var inRegion = await db.Places
+                .AsNoTracking()
+                .Where(p => p.Region == region)
+                .Select(p => p.Slug)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            var regionSlugs = inRegion.Select(s => s.Value).ToList();
+            feedQuery = feedQuery.Where(p => p.PlaceSlug != null && regionSlugs.Contains(p.PlaceSlug));
+        }
+
+        var rows = await feedQuery
             .OrderByDescending(p => p.CreatedAt)
             .Take(80)
             .Select(p => new
@@ -51,6 +64,8 @@ internal sealed class Handler(IAppDbContext db, ICurrentUser currentUser)
                 LikeCount = p.Likes.Count,
                 LikedByMe = viewer != null && p.Likes.Any(l => l.UserId == viewer),
                 Comments = p.Comments
+                    .OrderByDescending(c => c.CreatedAt)
+                    .Take(20)
                     .OrderBy(c => c.CreatedAt)
                     .Select(c => new { c.Id, c.AuthorId, c.Body, c.CreatedAt })
                     .ToList(),
@@ -105,10 +120,6 @@ internal sealed class Handler(IAppDbContext db, ICurrentUser currentUser)
             .Select(row =>
             {
                 placeBySlug.TryGetValue(row.PlaceSlug ?? string.Empty, out var place);
-                if (region is not null && place?.Region != region)
-                {
-                    return null;
-                }
 
                 return new PostDto(
                     row.Id,
@@ -128,8 +139,6 @@ internal sealed class Handler(IAppDbContext db, ICurrentUser currentUser)
                         c.CreatedAt,
                         viewer is { } id && c.AuthorId == id)).ToList());
             })
-            .Where(p => p is not null)
-            .Select(p => p!)
             .ToList();
 
         return Result.Success<IReadOnlyList<PostDto>>(feed);

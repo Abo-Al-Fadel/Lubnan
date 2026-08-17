@@ -12,4 +12,10 @@ public sealed class OutboxOptions
     public bool Enabled { get; set; } = true;
 
     public TimeSpan PollInterval { get; set; } = TimeSpan.FromSeconds(2);
+
+    /// <summary>
+    /// After this many failures a message is left pending but skipped, so
+    /// one unknown type cannot block the rest of the queue.
+    /// </summary>
+    public int MaxAttempts { get; set; } = 8;
 }
