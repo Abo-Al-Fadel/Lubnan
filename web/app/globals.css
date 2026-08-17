@@ -62,6 +62,11 @@
     --hero-ink-ghost: rgba(241, 237, 225, 0.2);
     --btn-solid: #f6f8f6;
     --btn-solid-ink: #12171a;
+
+    /* Overwritten from visualViewport so DevTools inspect cannot leave
+       100vw/100svh stuck at the last emulated phone size. */
+    --app-vh: 100dvh;
+    --app-vw: 100vw;
   }
 
   /* ── A · Raouche ─────────────────────────────────────────────────────
@@ -594,25 +599,7 @@ html {
 
 .scrim .map-halo,
 .scrim-deep .map-halo,
-.scrim-left /* Touch-target floor for small inline controls.
-   Applied where the crawl measured a link or button under 24px on a 390px
-   viewport: the visual size is unchanged, the hit area grows around it via a
-   pseudo-element so it does not disturb layout. */
-.tap {
-  position: relative;
-}
-
-.tap::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: max(100%, 44px);
-  height: max(100%, 44px);
-  transform: translate(-50%, -50%);
-}
-
-.map-halo {
+.scrim-left .map-halo {
   --map-halo: var(--scrim-strong);
 }
 

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import destinations from '@/data/destinations.json';
 import secrets from '@/data/secrets.json';
+import { useSite } from '@/lib/site-state';
 
 type Result = {
   id: string;
@@ -39,6 +40,7 @@ const INDEX: Result[] = [
  * data source and nothing about this component.
  */
 export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { tr } = useSite();
   const [q, setQ] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -102,17 +104,17 @@ export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () =>
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-label="Search Lubnān"
+        aria-label={tr('search.title')}
         className="w-full max-w-2xl overflow-hidden rounded-lg border border-ink-ghost bg-band"
       >
         <div className="flex items-center gap-3 border-b border-ink-ghost px-5">
-          <span className="micro shrink-0 text-ink-dim">Search</span>
+          <span className="micro shrink-0 text-ink-dim">{tr('nav.searchShort')}</span>
           <input
             ref={inputRef}
             value={q}
             onChange={(e) => setQ(e.target.value)}
             type="search"
-            placeholder="Byblos, cedars, the alphabet…"
+            placeholder={tr('search.placeholder')}
             className="w-full bg-transparent py-5 text-base text-ink outline-none placeholder:text-ink-dim"
           />
           <button
@@ -120,14 +122,14 @@ export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () =>
             onClick={onClose}
             className="micro shrink-0 rounded-full border border-ink-ghost px-3 py-1.5 text-ink-dim transition-colors duration-200 ease-out hover:text-ink"
           >
-            Esc
+            {tr('search.esc')}
           </button>
         </div>
 
         <div className="max-h-[52vh] overflow-y-auto">
           {q.trim() === '' ? (
             <div className="px-5 py-6">
-              <p className="micro mb-4 text-ink-dim">Try</p>
+              <p className="micro mb-4 text-ink-dim">{tr('search.try')}</p>
               <div className="flex flex-wrap gap-2">
                 {['Baalbek', 'cedars', 'Qadisha', 'alphabet', 'ski'].map((s) => (
                   <button
@@ -143,8 +145,7 @@ export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () =>
             </div>
           ) : results.length === 0 ? (
             <p className="px-5 py-8 text-sm text-ink-dim">
-              Nothing matches “{q}”. The index covers destinations and story
-              entries so far.
+              {tr('search.empty')} “{q}”. {tr('search.scope')}
             </p>
           ) : (
             <ul>
@@ -159,7 +160,9 @@ export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () =>
                       <span className="font-display text-base uppercase tracking-wide text-ink">
                         {r.title}
                       </span>
-                      <span className="micro shrink-0 text-ink-dim">{r.kind}</span>
+                      <span className="micro shrink-0 text-ink-dim">
+                        {r.kind === 'Destination' ? tr('search.destination') : tr('search.story')}
+                      </span>
                     </span>
                     <span className="micro text-ink-dim">{r.meta}</span>
                     <span className="line-clamp-2 max-w-[62ch] text-[0.82rem] leading-relaxed text-ink-dim">

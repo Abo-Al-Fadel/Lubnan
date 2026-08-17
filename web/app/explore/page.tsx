@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { SectionHead } from '@/components/PageShell';
 import { PhotoField } from '@/components/ui/PhotoField';
 import { LebanonMap } from '@/components/ui/LebanonMap';
@@ -21,8 +21,21 @@ const REGION_PLATES: Record<string, { plate: string; brief: string }> = {
 
 export default function ExplorePage() {
   const { tr } = useSite();
-  const [region, setRegion] = useState<string | null>(null);
+  const [region, setRegionState] = useState<string | null>(null);
   const [hover, setHover] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fromUrl = new URLSearchParams(window.location.search).get('region');
+    if (fromUrl && (REGIONS as readonly string[]).includes(fromUrl)) {
+      setRegionState(fromUrl);
+    }
+  }, []);
+
+  const setRegion = (next: string | null) => {
+    setRegionState(next);
+    const url = next ? `/explore?region=${encodeURIComponent(next)}` : '/explore';
+    window.history.replaceState(null, '', url);
+  };
 
   const filtered = useMemo(
     () => (region ? places.filter((p) => p.region === region) : places),

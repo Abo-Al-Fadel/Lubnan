@@ -5,6 +5,7 @@ import { Navbar, SiteFooter } from '@/components/sections/Chrome';
 import { PhotoField } from '@/components/ui/PhotoField';
 import { Heart } from '@/components/ui/Subjects';
 import { useSite } from '@/lib/site-state';
+import { useAuth } from '@/lib/auth';
 import { REGIONS, places } from '@/data/places';
 import posts from '@/data/posts.json';
 
@@ -65,10 +66,12 @@ const FEED = Array.from({ length: 12 }, (_, i) => {
 
 export default function CommunityPage() {
   const { tr } = useSite();
+  const { me } = useAuth();
   const [liked, setLiked] = useState<Record<string, boolean>>({});
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [region, setRegion] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
+  const [notice, setNotice] = useState<string | null>(null);
 
   const shown = useMemo(
     () => (region ? FEED.filter((p) => p.region === region) : FEED),
@@ -126,7 +129,7 @@ export default function CommunityPage() {
             {/* Compose */}
             <div className="rounded-xl border border-ink-ghost bg-ground p-4">
               <div className="flex gap-3">
-                <Avatar name="You" />
+                <Avatar name={me?.displayName ?? tr('community.you')} />
                 <div className="flex-1">
                   <label htmlFor="compose" className="sr-only">
                     {tr('community.composeLabel')}
@@ -136,24 +139,37 @@ export default function CommunityPage() {
                     rows={draft ? 3 : 1}
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
-                    placeholder={tr('community.composePlaceholder')}
-                    className="w-full resize-none border-0 bg-transparent p-0 text-sm leading-relaxed text-ink outline-none placeholder:text-ink-dim"
+                    placeholder={me ? tr('community.composePlaceholder') : tr('community.signInToPost')}
+                    disabled={!me}
+                    className="w-full resize-none border-0 bg-transparent p-0 text-sm leading-relaxed text-ink outline-none placeholder:text-ink-dim disabled:opacity-70"
                   />
                 </div>
               </div>
-              {draft ? (
+              {draft && me ? (
                 <div className="mt-3 flex items-center justify-between gap-3 border-t border-ink-ghost pt-3">
                   <p className="micro text-ink-dim">{tr('community.composeNote')}</p>
                   <button
                     type="button"
-                    onClick={() => setDraft('')}
+                    onClick={() => {
+                      setDraft('');
+                      setNotice(tr('community.composeNote'));
+                    }}
                     className="micro rounded-full bg-accent px-4 py-2 text-[color:var(--accent-ink)]"
                   >
                     {tr('community.post')}
                   </button>
                 </div>
               ) : null}
+              {notice ? (
+                <p className="micro mt-3 text-ink-dim" role="status">
+                  {notice}
+                </p>
+              ) : null}
             </div>
+
+            {shown.length === 0 ? (
+              <p className="py-8 text-sm text-ink-dim">{tr('community.empty')}</p>
+            ) : null}
 
             {shown.map((p) => {
               const isLiked = Boolean(liked[p.id]);
@@ -175,7 +191,9 @@ export default function CommunityPage() {
                     <button
                       type="button"
                       aria-label={tr('community.more')}
-                      className="shrink-0 px-2 text-ink-dim transition-colors hover:text-ink"
+                      disabled
+                      title={tr('community.comingSoon')}
+                      className="shrink-0 px-2 text-ink-dim opacity-40"
                     >
                       ···
                     </button>
@@ -226,9 +244,9 @@ export default function CommunityPage() {
                       label={isLiked ? tr('community.liked') : tr('community.like2')}
                       icon={<Heart filled={isLiked} />}
                     />
-                    <Action label={tr('community.comment')} icon={<CommentIcon />} />
-                    <Action label={tr('community.share')} icon={<ShareIcon />} />
-                    <Action label={tr('community.save')} icon={<SaveIcon />} />
+                    <Action label={tr('community.comment')} icon={<CommentIcon />} disabled title={tr('community.comingSoon')} />
+                    <Action label={tr('community.share')} icon={<ShareIcon />} disabled title={tr('community.comingSoon')} />
+                    <Action label={tr('community.save')} icon={<SaveIcon />} disabled title={tr('community.comingSoon')} />
                   </div>
                 </article>
               );
@@ -252,7 +270,9 @@ export default function CommunityPage() {
                       </div>
                       <button
                         type="button"
-                        className="micro shrink-0 rounded-full border border-ink-ghost px-3 py-1.5 text-ink transition-colors hover:border-accent hover:bg-accent hover:text-[color:var(--accent-ink)]"
+                        disabled
+                        title={tr('community.comingSoon')}
+                        className="micro shrink-0 rounded-full border border-ink-ghost px-3 py-1.5 text-ink opacity-50"
                       >
                         {tr('community.follow')}
                       </button>
@@ -314,19 +334,25 @@ function Action({
   onClick,
   active,
   pressed,
+  disabled,
+  title,
 }: {
   label: string;
   icon: React.ReactNode;
   onClick?: () => void;
   active?: boolean;
   pressed?: boolean;
+  disabled?: boolean;
+  title?: string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={pressed}
-      className="micro flex flex-1 items-center justify-center gap-2 py-3 transition-colors hover:bg-[color:var(--ink-ghost)]"
+      disabled={disabled}
+      title={title}
+      className="micro flex flex-1 items-center justify-center gap-2 py-3 transition-colors hover:bg-[color:var(--ink-ghost)] disabled:cursor-not-allowed disabled:opacity-50"
       style={{ color: active ? 'var(--accent)' : 'var(--ink-dim)' }}
     >
       {icon}

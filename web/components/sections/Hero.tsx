@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { PhotoField } from '@/components/ui/PhotoField';
 import { HeroSubject } from '@/components/ui/HeroSubject';
 import { Counter } from '@/components/ui/Counter';
@@ -41,12 +42,11 @@ export function HeroOcclusion({
   const { tr, tc } = useSite();
 
   return (
-    /* The 100svh now lives on the scrim, not on the section. With it on the
+    /* Viewport height lives on the scrim, not on the section. With it on the
        section, the seam was a flex sibling of the composition and took its
-       176px out of the same 100svh — it cropped the frame instead of
-       extending it. Now the composition owns a full viewport and the seam is
-       height added *below* it, so the section is 100svh + seam and the plate
-       keeps running behind the whole of it. */
+       176px out of the same viewport — it cropped the frame instead of
+       extending it. --app-vh tracks visualViewport so closing DevTools inspect
+       cannot leave the hero stuck at the last phone size. */
     <section className="relative flex flex-col overflow-hidden bg-band">
       <PhotoField
         brief={imageBrief}
@@ -60,7 +60,7 @@ export function HeroOcclusion({
 
       <Navbar />
 
-      <div className="scrim relative flex min-h-[100svh] flex-col text-hero-ink">
+      <div className="scrim relative flex min-h-[var(--app-vh,100dvh)] flex-col text-hero-ink">
         <div className="relative flex flex-1 flex-col">
           <h1 className="sr-only">
             Lubnān. A guide to Lebanon&rsquo;s coast, mountains and ruins
@@ -112,7 +112,7 @@ export function HeroOcclusion({
               composition, tracking easing open as the frame widens. */}
           <span
             aria-hidden="true"
-            className="anim-word pointer-events-none absolute bottom-[4%] left-1/2 z-10 w-[116vw] -translate-x-1/2 text-center font-display text-[24vw] font-bold uppercase leading-[0.8] tracking-[0.015em] text-hero-ink md:bottom-[7%] md:text-[23vw] md:tracking-[0.04em]"
+            className="anim-word pointer-events-none absolute bottom-[4%] left-1/2 z-10 w-[calc(var(--app-vw,100vw)*1.16)] -translate-x-1/2 text-center font-display text-[length:calc(var(--app-vw,100vw)*0.24)] font-bold uppercase leading-[0.8] tracking-[0.015em] text-hero-ink md:bottom-[7%] md:text-[length:calc(var(--app-vw,100vw)*0.23)] md:tracking-[0.04em]"
           >
             {variation.heroWord}
           </span>
@@ -153,7 +153,7 @@ export function HeroOcclusion({
           <div className="grid grid-cols-2 md:grid-cols-4 md:divide-x md:divide-[color:var(--hero-ink-ghost)]">
             <div className="border-b border-r border-hero-ink-ghost px-5 py-6 md:border-b-0 md:border-r-0 md:px-8 md:py-8">
               <p className="micro text-hero-ink-dim">{tr('hero.start')}</p>
-              <a href="/plan" className="group mt-3 inline-flex items-center gap-2 text-sm text-hero-ink">
+              <Link href="/plan" className="group mt-3 inline-flex items-center gap-2 text-sm text-hero-ink">
                 <span className="border-b border-hero-ink pb-1 transition-colors duration-300 ease-out group-hover:border-accent group-hover:text-accent">
                   {tr('hero.plan')}
                 </span>
@@ -163,7 +163,7 @@ export function HeroOcclusion({
                 >
                   →
                 </span>
-              </a>
+              </Link>
             </div>
             {stats.map((s, i) => (
               <div

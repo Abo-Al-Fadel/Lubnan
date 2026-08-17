@@ -18,6 +18,12 @@ namespace Lubnan.Domain.Users.Events;
 /// </remarks>
 public sealed record UserRegistered(Guid UserId, string Email, string DisplayName) : DomainEvent;
 
+/// <summary>
+/// A second registration for an address that already has an account.
+/// The HTTP response is unchanged; this event is what sends the owner mail.
+/// </summary>
+public sealed record UserRegistrationReattempted(Guid UserId, string Email) : DomainEvent;
+
 public sealed record UserEmailConfirmed(Guid UserId, string Email) : DomainEvent;
 
 public sealed record UserEmailChanged(Guid UserId, string Email) : DomainEvent;

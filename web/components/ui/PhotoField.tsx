@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { PLATE_EXTENSIONS, phoneCandidates, platePath, videoPath } from '@/lib/plates';
+import { useMediaQuery } from '@/lib/media';
+import { PLATE_EXTENSIONS, phoneCandidates, platePath, videoCandidates } from '@/lib/plates';
 
 /**
  * An image slot.
@@ -40,7 +41,7 @@ export function PhotoField({
   priority?: boolean;
   /** Crop anchor, e.g. "50% 30%" to hold a horizon on tall crops. */
   objectPosition?: string;
-  /** Plate ID of an .mp4 to play over the still once it can. Desktop only. */
+  /** Plate ID of an .mp4 to play over the still once it can. */
   video?: string;
   children?: React.ReactNode;
 }) {
@@ -50,12 +51,20 @@ export function PhotoField({
   const [videoSrc, setVideoSrc] = useState<string | null>(null);
   const [videoReady, setVideoReady] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const isPhone = useMediaQuery('(max-width: 767px)');
+  const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
 
   useEffect(() => {
     setExtIndex(0);
-    setPhoneSrc(null);
-    if (!plate || typeof window === 'undefined') return;
-    if (!window.matchMedia('(max-width: 767px)').matches) return;
+    if (!plate) {
+      setPhoneSrc(null);
+      return;
+    }
+    if (!isPhone) {
+      setPhoneSrc(null);
+      return;
+    }
 
     const candidates = phoneCandidates(plate);
 
@@ -74,7 +83,7 @@ export function PhotoField({
     return () => {
       cancelled = true;
     };
-  }, [plate]);
+  }, [plate, isPhone]);
 
   const exhausted = extIndex >= PLATE_EXTENSIONS.length;
   const src = phoneSrc ?? (plate ? platePath(plate, PLATE_EXTENSIONS[extIndex]) : null);
@@ -113,19 +122,111 @@ export function PhotoField({
    * photograph that was already there. Nothing to fall back to because nothing
    * was taken away.
    *
-   * Gated to wide viewports and to users who have not asked for reduced motion.
-   * A1.mp4 is ~40MB; that is fine on a desktop connection and hostile on a
-   * phone, which gets the still and the portrait crop instead. Mounting is
-   * deferred until the still has decoded so the two never compete for
-   * bandwidth on the critical path.
+   * Plays on phones too (muted, inline). An earlier gate at 768px left mobile
+   * on the still forever, and because the query was read once, closing
+   * DevTools inspect left the phone crop locked on a desktop frame.
+   *
+   * The source is chosen once per plate so toggling inspect does not reload
+   * a several-hundred-megabyte file. Playback is kicked again on resize and
+   * visibility — Chrome pauses media when the device toolbar opens.
+   *
+   * Mounting waits until the still has decoded so the two never compete for
+   * bandwidth on the critical path. Reduced-motion users stay on the still.
    */
   useEffect(() => {
-    if (!video || !loaded || typeof window === 'undefined') return;
-    if (!window.matchMedia('(min-width: 768px)').matches) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const id = window.setTimeout(() => setVideoSrc(videoPath(video)), 400);
-    return () => window.clearTimeout(id);
-  }, [video, loaded]);
+    if (!video || !loaded || reduceMotion) {
+      if (!video || reduceMotion) {
+        setVideoSrc(null);
+        setVideoReady(false);
+      }
+      return;
+    }
+    if (videoSrc) return;
+
+    let cancelled = false;
+    const id = window.setTimeout(() => {
+      const candidates = videoCandidates(video);
+      const probe = async (i: number) => {
+        if (cancelled) return;
+        if (i >= candidates.length) {
+          setVideoSrc(candidates[candidates.length - 1] ?? null);
+          return;
+        }
+        const url = candidates[i];
+        try {
+          const res = await fetch(url, { method: 'HEAD' });
+          if (cancelled) return;
+          if (res.ok || res.status === 405) {
+            setVideoSrc(url);
+            return;
+          }
+        } catch {
+          /* HEAD can fail on odd static hosts; try the next name. */
+        }
+        await probe(i + 1);
+      };
+      void probe(0);
+    }, 400);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(id);
+    };
+  }, [video, loaded, reduceMotion, videoSrc]);
+
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el || !videoSrc) return;
+
+    const arm = (node: HTMLVideoElement) => {
+      node.muted = true;
+      node.defaultMuted = true;
+      node.setAttribute('playsinline', '');
+      node.setAttribute('webkit-playsinline', '');
+    };
+    arm(el);
+
+    const kick = () => {
+      const node = videoRef.current;
+      if (!node || document.visibilityState !== 'visible') return;
+      arm(node);
+      if (node.readyState >= 2) setVideoReady(true);
+      void node.play().catch(() => {
+        /* Autoplay refused: the still stays. */
+      });
+    };
+
+    const onVis = () => {
+      if (document.visibilityState === 'visible') kick();
+    };
+
+    kick();
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('pageshow', kick);
+    window.addEventListener('resize', kick);
+    window.addEventListener('orientationchange', kick);
+    window.visualViewport?.addEventListener('resize', kick);
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry) return;
+        if (entry.isIntersecting) kick();
+        else videoRef.current?.pause();
+      },
+      { threshold: 0.15 },
+    );
+    io.observe(el);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('pageshow', kick);
+      window.removeEventListener('resize', kick);
+      window.removeEventListener('orientationchange', kick);
+      window.visualViewport?.removeEventListener('resize', kick);
+      io.disconnect();
+    };
+  }, [videoSrc]);
 
   const tone =
     variant === 'low'
@@ -181,16 +282,24 @@ export function PhotoField({
 
       {videoSrc ? (
         <video
+          ref={videoRef}
           src={videoSrc}
           autoPlay
           muted
           loop
           playsInline
-          preload="auto"
+          preload={isPhone ? 'metadata' : 'auto'}
           aria-hidden="true"
           tabIndex={-1}
-          onCanPlay={() => setVideoReady(true)}
-          onError={() => setVideoSrc(null)}
+          onCanPlay={() => {
+            setVideoReady(true);
+            void videoRef.current?.play().catch(() => undefined);
+          }}
+          onPlaying={() => setVideoReady(true)}
+          onError={() => {
+            setVideoReady(false);
+            setVideoSrc(null);
+          }}
           style={{
             opacity: videoReady ? 1 : 0,
             ...(objectPosition ? { objectPosition } : {}),
@@ -202,7 +311,10 @@ export function PhotoField({
       {children}
 
       {showSlots ? (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/55 p-4">
+        <div
+          data-slot-overlay
+          className="absolute inset-0 z-30 flex items-center justify-center bg-black/55 p-4"
+        >
           <p className="micro max-w-[44ch] text-center leading-[1.9] text-white">
             <span className="mr-2 inline-block border border-white/40 px-1.5 py-0.5">
               {plate ?? 'Image'}

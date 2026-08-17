@@ -71,6 +71,7 @@ public sealed class LubnanApiFactory : WebApplicationFactory<Program>, IAsyncLif
         // own low value to prove the limit actually fires.
         Environment.SetEnvironmentVariable("RateLimits__AuthPermitLimit", "10000");
         Environment.SetEnvironmentVariable("RateLimits__ReadPermitLimit", "10000");
+        Environment.SetEnvironmentVariable("Outbox__Enabled", "false");
 
         using var scope = Services.CreateScope();
 

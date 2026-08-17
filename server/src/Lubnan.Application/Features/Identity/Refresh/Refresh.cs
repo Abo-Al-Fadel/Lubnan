@@ -53,9 +53,19 @@ internal sealed class Handler(
         // twice by a well-behaved client, so somebody has a copy.
         if (!session.IsActive)
         {
-            var reuse = user.DetectReuse(session, now);
-            await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            return Result.Failure<SessionGrant>(reuse.Error);
+            // Reuse detection is for a token that was rotated and then
+            // presented again. A token ended by sign-out, expiry or a
+            // suspension is just a dead session: treating it as theft would
+            // mail the holder "your account was stolen" after a normal
+            // logout, the moment a background tab retried refresh.
+            if (session.EndReason is SessionEndReason.Rotated)
+            {
+                var reuse = user.DetectReuse(session, now);
+                await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                return Result.Failure<SessionGrant>(reuse.Error);
+            }
+
+            return Result.Failure<SessionGrant>(Denied);
         }
 
         if (session.IsExpired(now) || !user.CanSignIn(now))

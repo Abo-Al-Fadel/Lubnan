@@ -279,6 +279,25 @@ public sealed class User : AggregateRoot
         return Result.Success();
     }
 
+    /// <summary>
+    /// Replace the stored hash after a successful verify that used outdated
+    /// parameters. Sessions stay alive: this is not a password change.
+    /// </summary>
+    public Result RehashPassword(string newPasswordHash)
+    {
+        PasswordHash = newPasswordHash;
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Somebody tried to register an address that already has an account.
+    /// The HTTP response stays identical; the mail is how the owner finds out.
+    /// </summary>
+    public void NoteRegistrationAttempt(DateTimeOffset now)
+    {
+        Raise(new UserRegistrationReattempted(Id, Email.Value) { OccurredAt = now });
+    }
+
     /// <summary>Record a failed attempt and lock out once they add up.</summary>
     public void RecordFailedSignIn(DateTimeOffset now, string? ipHash = null)
     {

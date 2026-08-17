@@ -173,8 +173,9 @@ export default function StoryPage() {
 
         {/* ── Horizontal rail, one century per screen ─────────────────── */}
         <div
+          id="spine"
           ref={railRef}
-          className="rail flex snap-x snap-mandatory overflow-x-auto"
+          className="rail flex snap-x snap-mandatory overflow-x-auto scroll-mt-28"
           aria-label={tr('story.spine')}
         >
           {ERAS.map((e, i) => (

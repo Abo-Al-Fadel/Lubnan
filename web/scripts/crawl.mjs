@@ -19,7 +19,7 @@ const ROUTES = [
   '/', '/explore', '/explore/byblos', '/explore/baalbek', '/explore/jeita',
   '/explore/cedars', '/explore/qadisha', '/explore/tyre', '/explore/beirut',
   '/explore/batroun', '/story', '/people', '/achievements', '/legacy',
-  '/plan', '/community', '/login', '/profile',
+  '/plan', '/community', '/login', '/profile', '/confirm-email',
 ];
 
 const VIEWPORTS = [
@@ -51,8 +51,12 @@ for (const [vpName, viewport] of VIEWPORTS) {
       }
     });
     page.on('response', (r) => {
-      if (r.status() >= 400 && !r.url().includes('/img/')) {
-        failed.push(`${r.status()} ${r.url().replace(BASE, '')}`);
+      const url = r.url();
+      if (r.status() >= 400 && !url.includes('/img/')) {
+        // Guest session probe. 401 is the signed-out answer; 502 is the API
+        // not running. Neither is a broken page.
+        if (url.includes('/api/v1/me') && (r.status() === 401 || r.status() === 502)) return;
+        failed.push(`${r.status()} ${url.replace(BASE, '')}`);
       }
     });
 

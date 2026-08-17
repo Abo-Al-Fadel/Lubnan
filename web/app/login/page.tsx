@@ -1,9 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { PhotoField } from '@/components/ui/PhotoField';
 import { Wordmark } from '@/components/ui/Wordmark';
 import { useSite } from '@/lib/site-state';
+import { useAuth } from '@/lib/auth';
+import { api, ApiError } from '@/lib/api';
 
 /**
  * ridge-quiet-half-composition: the form takes one half against a flat ground,
@@ -16,17 +20,20 @@ import { useSite } from '@/lib/site-state';
  */
 export default function LoginPage() {
   const { tr } = useSite();
+  const { refresh } = useAuth();
+  const router = useRouter();
   const [mode, setMode] = useState<'in' | 'up'>('in');
-  const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [registered, setRegistered] = useState(false);
 
   return (
-    <div data-palette="raouche" className="min-h-svh bg-ground">
+    <main id="main" data-palette="raouche" className="min-h-svh bg-ground">
       <div className="grid min-h-svh grid-cols-1 lg:grid-cols-2">
-        {/* Quiet half */}
         <div className="order-2 flex flex-col justify-between px-5 py-10 md:px-14 md:py-14 lg:order-1">
-          <a href="/" className="text-ink" aria-label={tr('nav.home')}>
+          <Link href="/" className="text-ink" aria-label={tr('nav.home')}>
             <Wordmark size="md" />
-          </a>
+          </Link>
 
           <div className="mx-auto w-full max-w-[26rem] py-14">
             <p className="micro text-ink-dim">
@@ -39,45 +46,112 @@ export default function LoginPage() {
               {tr('login.note')}
             </p>
 
-            <form
-              className="mt-10 flex flex-col gap-7"
-              onSubmit={(e) => {
-                e.preventDefault();
-                setSent(true);
-              }}
-            >
-              {mode === 'up' ? (
-                <Field id="name" label={tr('login.name')} type="text" autoComplete="name" />
-              ) : null}
-              <Field id="email" label={tr('login.email')} type="email" autoComplete="email" />
-              <Field
-                id="password"
-                label={tr('login.password')}
-                type="password"
-                autoComplete={mode === 'in' ? 'current-password' : 'new-password'}
-              />
-
-              <button
-                type="submit"
-                className="btn-solid mt-2 w-full rounded-full px-8 py-4 text-sm font-semibold transition-all duration-300 hover:-translate-y-0.5"
+            {registered ? (
+              <p className="mt-10 text-sm leading-relaxed text-ink" role="status">
+                {tr('login.registered')}
+              </p>
+            ) : (
+              <form
+                className="mt-10 flex flex-col gap-7"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (busy) return;
+                  setError(null);
+                  setBusy(true);
+                  const form = e.currentTarget;
+                  const data = new FormData(form);
+                  const email = String(data.get('email') ?? '');
+                  const password = String(data.get('password') ?? '');
+                  const displayName = String(data.get('name') ?? '');
+                  try {
+                    if (mode === 'up') {
+                      await api('/api/v1/auth/register', {
+                        method: 'POST',
+                        body: JSON.stringify({ email, password, displayName }),
+                      });
+                      setRegistered(true);
+                    } else {
+                      await api('/api/v1/auth/login', {
+                        method: 'POST',
+                        body: JSON.stringify({ email, password }),
+                      });
+                      await refresh();
+                      router.push('/profile');
+                    }
+                  } catch (err) {
+                    if (err instanceof ApiError && err.code === 'network') {
+                      setError(tr('login.errorNetwork'));
+                    } else if (err instanceof ApiError && err.status === 401) {
+                      setError(tr('login.errorCredentials'));
+                    } else if (err instanceof ApiError && err.status === 400) {
+                      setError(err.message || tr('login.errorGeneric'));
+                    } else {
+                      setError(tr('login.errorGeneric'));
+                    }
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
               >
-                {mode === 'in' ? tr('login.submitIn') : tr('login.submitUp')}
-              </button>
+                {mode === 'up' ? (
+                  <Field
+                    id="name"
+                    label={tr('login.name')}
+                    type="text"
+                    autoComplete="name"
+                    minLength={2}
+                    maxLength={40}
+                    disabled={busy}
+                  />
+                ) : null}
+                <Field
+                  id="email"
+                  label={tr('login.email')}
+                  type="email"
+                  autoComplete="email"
+                  maxLength={254}
+                  disabled={busy}
+                />
+                <Field
+                  id="password"
+                  label={tr('login.password')}
+                  type="password"
+                  autoComplete={mode === 'in' ? 'current-password' : 'new-password'}
+                  minLength={mode === 'up' ? 12 : 1}
+                  maxLength={256}
+                  hint={mode === 'up' ? tr('login.passwordHint') : undefined}
+                  disabled={busy}
+                />
 
-              {sent ? (
-                <p className="micro text-accent" role="status">
-                  {tr('login.demo')}
-                </p>
-              ) : null}
-            </form>
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="btn-solid mt-2 w-full rounded-full px-8 py-4 text-sm font-semibold transition-all duration-300 hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-60"
+                >
+                  {busy
+                    ? tr('login.pending')
+                    : mode === 'in'
+                      ? tr('login.submitIn')
+                      : tr('login.submitUp')}
+                </button>
+
+                {error ? (
+                  <p className="micro text-[color:var(--status-warn)]" role="alert">
+                    {error}
+                  </p>
+                ) : null}
+              </form>
+            )}
 
             <p className="mt-9 text-sm text-ink-dim">
               {mode === 'in' ? tr('login.swapToUp') : tr('login.swapToIn')}{' '}
               <button
                 type="button"
+                disabled={busy}
                 onClick={() => {
                   setMode(mode === 'in' ? 'up' : 'in');
-                  setSent(false);
+                  setError(null);
+                  setRegistered(false);
                 }}
                 className="tap border-b border-ink pb-0.5 text-ink transition-opacity hover:opacity-60"
               >
@@ -89,7 +163,6 @@ export default function LoginPage() {
           <p className="micro text-ink-dim">{tr('login.foot')}</p>
         </div>
 
-        {/* Photographic half */}
         <div className="relative order-1 min-h-[38svh] lg:order-2 lg:min-h-svh">
           <PhotoField
             brief="Raouche sea stacks off Beirut at sunset, warm gold and deep blue water, dramatic saturated colour"
@@ -105,21 +178,28 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 
-/** Hairline-underlined input. No boxes — it matches the rules used site-wide. */
 function Field({
   id,
   label,
   type,
   autoComplete,
+  minLength,
+  maxLength,
+  hint,
+  disabled,
 }: {
   id: string;
   label: string;
   type: string;
   autoComplete: string;
+  minLength?: number;
+  maxLength?: number;
+  hint?: string;
+  disabled?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-2">
@@ -132,8 +212,17 @@ function Field({
         type={type}
         autoComplete={autoComplete}
         required
-        className="w-full border-0 border-b border-ink-ghost bg-transparent px-0 py-2.5 text-base text-ink outline-none transition-colors duration-200 placeholder:text-ink-dim focus:border-accent"
+        minLength={minLength}
+        maxLength={maxLength}
+        disabled={disabled}
+        aria-describedby={hint ? `${id}-hint` : undefined}
+        className="w-full border-0 border-b border-ink-ghost bg-transparent px-0 py-2.5 text-base text-ink outline-none transition-colors duration-200 placeholder:text-ink-dim focus:border-accent disabled:opacity-60"
       />
+      {hint ? (
+        <p id={`${id}-hint`} className="micro text-ink-dim">
+          {hint}
+        </p>
+      ) : null}
     </div>
   );
 }

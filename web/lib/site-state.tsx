@@ -23,24 +23,28 @@ const SiteContext = createContext<Ctx | null>(null);
 export function SiteProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>('en');
   const [theme, setTheme] = useState<Theme>('light');
+  const [hydrated, setHydrated] = useState(false);
 
-  /* Restore choices, then mirror them onto <html> so CSS and screen readers
-     both see the real language and direction. */
+  /* Restore choices after mount. A blocking script in <head> already applied
+     them to <html>, so this effect must not write light/en over that before
+     it has read storage — that was the flash. */
   useEffect(() => {
     const savedLocale = localStorage.getItem('lubnan.locale') as Locale | null;
     const savedTheme = localStorage.getItem('lubnan.theme') as Theme | null;
     if (savedLocale && LOCALES.some((l) => l.code === savedLocale)) setLocaleState(savedLocale);
     if (savedTheme === 'light' || savedTheme === 'dark') setTheme(savedTheme);
     else if (window.matchMedia('(prefers-color-scheme: dark)').matches) setTheme('dark');
+    setHydrated(true);
   }, []);
 
   const dir = LOCALES.find((l) => l.code === locale)?.dir ?? 'ltr';
 
   useEffect(() => {
+    if (!hydrated) return;
     document.documentElement.lang = locale;
     document.documentElement.dir = dir;
     document.documentElement.dataset.theme = theme;
-  }, [locale, dir, theme]);
+  }, [hydrated, locale, dir, theme]);
 
   const setLocale = useCallback((l: Locale) => {
     setLocaleState(l);

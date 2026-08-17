@@ -1,21 +1,10 @@
 /**
  * The API is proxied, not called directly.
  *
- * Everything under /api/ is rewritten server-side to whichever host the backend
- * is deployed on, so the browser only ever talks to this origin. That is worth
- * a paragraph, because it decides the entire authentication design:
+ * /api is handled by app/api/[...path]/route.ts so multiple Set-Cookie headers
+ * on a session survive the hop. Health probes stay as a rewrite.
  *
- *   - Same origin means no CORS. No preflight on every mutation, no allow-list
- *     to keep in step with a deployment.
- *   - Same origin means the session cookies are first-party. SameSite=Lax works,
- *     and none of it depends on third-party cookies, which browsers are steadily
- *     turning off.
- *   - The API host never appears in a URL a reader can see, so it can sit behind
- *     the platform's private networking rather than on the public internet.
- *
- * The alternative — the browser calling api.example.com directly — needs CORS
- * with credentials, and either a shared registrable domain or SameSite=None
- * cookies that are on a deprecation path. This costs one line of config.
+ * Same origin means no CORS, first-party cookies, and SameSite=Lax.
  *
  * Set API_ORIGIN in the deployment. Locally it defaults to the port
  * `dotnet run` uses.
@@ -29,17 +18,14 @@ const nextConfig = {
     const api = process.env.API_ORIGIN ?? 'http://localhost:5080';
 
     return [
-      { source: '/api/:path*', destination: `${api}/api/:path*` },
-
-      // Health probes are proxied too, so an uptime check can watch the API
-      // through the same front door a reader uses. A check that talks straight
-      // to the origin is a check that stays green while the path everyone
-      // actually takes is broken.
+      // Health probes stay as a rewrite. /api is handled by app/api/[...path]
+      // so multiple Set-Cookie headers on a session survive the hop.
       { source: '/health/:path*', destination: `${api}/health/:path*` },
     ];
   },
 
   async headers() {
+    const dev = process.env.NODE_ENV !== 'production';
     return [
       {
         source: '/:path*',
@@ -49,9 +35,37 @@ const nextConfig = {
           { key: 'X-Frame-Options', value: 'DENY' },
           {
             key: 'Permissions-Policy',
-            value: 'geolocation=(), camera=(), microphone=(), payment=()',
+            value: 'geolocation=(), camera=(), microphone=(), payment=(), usb=()',
+          },
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ''}`,
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: blob:",
+              "media-src 'self' blob:",
+              "font-src 'self'",
+              "connect-src 'self'",
+              "frame-ancestors 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+              "object-src 'none'",
+            ].join('; '),
           },
         ],
+      },
+      {
+        source: '/img/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
+      {
+        source: '/brand/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
+      {
+        source: '/vid/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
       },
     ];
   },

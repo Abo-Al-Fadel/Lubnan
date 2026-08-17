@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PageShell, PageBanner } from '@/components/PageShell';
 import { PhotoField } from '@/components/ui/PhotoField';
 import { FlightBoard } from '@/components/ui/FlightBoard';
@@ -85,6 +85,20 @@ export default function PlanPage() {
   const [days, setDays] = useState(5);
   const [picked, setPicked] = useState<string[]>(['byblos', 'baalbek', 'cedars']);
 
+  useEffect(() => {
+    if (!sheet) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSheet(false);
+    };
+    document.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [sheet]);
+
   const capacity = days <= 3 ? 3 : days <= 5 ? 5 : 8;
 
   const toggle = (id: string) =>
@@ -162,7 +176,7 @@ export default function PlanPage() {
             {STEPS.map((s, i) => {
               const isOpen = open === i;
               return (
-                <div key={s.id} id={s.id} className="border-t border-ink-ghost last:border-b">
+                <div key={s.id} id={s.id} className="scroll-mt-28 border-t border-ink-ghost last:border-b">
                   <h2>
                     <button
                       type="button"
@@ -319,7 +333,7 @@ export default function PlanPage() {
                 type="button"
                 onClick={() => setSheet(false)}
                 aria-label={tr('nav.close')}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-ink-ghost text-ink transition-colors hover:border-accent hover:bg-accent hover:text-[color:var(--accent-ink)]"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-ink-ghost text-ink transition-colors hover:border-accent hover:bg-accent hover:text-[color:var(--accent-ink)]"
               >
                 ×
               </button>

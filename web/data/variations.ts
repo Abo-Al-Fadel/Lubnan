@@ -8,7 +8,7 @@ export type Variation = {
   subject: 'arch' | 'cedar' | 'columns' | 'headland';
   /** Hero background plate ID, resolved under /img/. */
   heroPlate: string;
-  /** Optional .mp4 of the same frame, played over the still on wide screens. */
+  /** Optional .mp4 of the same frame, played over the still. */
   heroVideo?: string;
   /** Hero cut-out ID, resolved under /img/cutouts/. Falls back to the drawn SVG. */
   cutoutPlate: string;

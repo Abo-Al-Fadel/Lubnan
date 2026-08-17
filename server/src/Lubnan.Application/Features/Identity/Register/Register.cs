@@ -39,7 +39,10 @@ internal sealed class Validator : AbstractValidator<Command>
             // passwords is a denial of service against one CPU each.
             .MaximumLength(256).WithMessage("That password is too long.");
 
-        RuleFor(c => c.DisplayName).NotEmpty().MaximumLength(DisplayName.MaxLength);
+        RuleFor(c => c.DisplayName)
+            .NotEmpty()
+            .MinimumLength(DisplayName.MinLength)
+            .MaximumLength(DisplayName.MaxLength);
     }
 }
 
@@ -65,12 +68,17 @@ internal sealed class Handler(
 
         var now = clock.UtcNow;
 
+        // Hash before the lookup, always. Skipping it on an address we already
+        // know makes "that address is registered" measurably faster than a
+        // new one, which is the timing oracle the identical HTTP response
+        // exists to close.
+        var passwordHash = passwords.Hash(command.Password);
+
         var existing = await db.Users
-            .AsNoTracking()
-            .AnyAsync(u => u.Email == email.Value, cancellationToken)
+            .FirstOrDefaultAsync(u => u.Email == email.Value, cancellationToken)
             .ConfigureAwait(false);
 
-        if (existing)
+        if (existing is not null)
         {
             // Success, on purpose, and this is the one piece of dishonesty in
             // the whole API.
@@ -83,24 +91,44 @@ internal sealed class Handler(
             // So registration always answers the same way, and the *email*
             // carries the difference: a new address gets a confirmation link,
             // an existing one gets "someone tried to register with your
-            // address; here is how to sign in or reset". The person who owns
-            // the address learns everything; the person who does not learns
+            // address; here is how to sign in". The person who owns the
+            // address learns everything; the person who does not learns
             // nothing.
-            //
-            // The trade is a worse experience for someone who genuinely forgot
-            // they had signed up. That is a mail in their inbox, against
-            // handing an enumeration tool to everyone else.
+            existing.NoteRegistrationAttempt(now);
+            await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return Result.Success();
         }
 
-        var user = User.Register(email.Value, displayName.Value, passwords.Hash(command.Password), now);
+        var user = User.Register(email.Value, displayName.Value, passwordHash, now);
         if (user.IsFailure)
         {
             return user;
         }
 
         db.Users.Add(user.Value);
-        await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (DbUpdateException)
+        {
+            // The unique index on email is the real guard against two requests
+            // racing. Any other failure still surfaces: if the address is now
+            // there this was the race, and we answer the same way; if not,
+            // something else broke and the caller should see it.
+            var taken = await db.Users
+                .AsNoTracking()
+                .AnyAsync(u => u.Email == email.Value, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (taken)
+            {
+                return Result.Success();
+            }
+
+            throw;
+        }
 
         // The confirmation mail is sent by a consumer of UserRegistered, from
         // the outbox. Sending it here would mean a registration that fails

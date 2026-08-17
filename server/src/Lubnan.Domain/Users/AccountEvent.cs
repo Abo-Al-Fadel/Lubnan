@@ -23,6 +23,7 @@ public enum AccountEventType
     DeletionRequested = 15,
     DeletionCancelled = 16,
     Anonymised = 17,
+    RegistrationReattempted = 18,
 }
 
 /// <summary>

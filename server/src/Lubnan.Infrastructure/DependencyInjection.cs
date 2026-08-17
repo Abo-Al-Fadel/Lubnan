@@ -4,6 +4,7 @@ using Lubnan.Application.Features.Identity;
 using Lubnan.Infrastructure.Mail;
 using Lubnan.Infrastructure.Persistence;
 using Lubnan.Infrastructure.Persistence.Interceptors;
+using Lubnan.Infrastructure.Persistence.Outbox;
 using Lubnan.Infrastructure.Persistence.Seed;
 using Lubnan.Infrastructure.Security;
 using Lubnan.Infrastructure.Time;
@@ -82,6 +83,9 @@ public static class DependencyInjection
         // Development writes mail to disk. A provider goes here behind the same
         // interface, and no handler changes.
         services.AddSingleton<IEmailSender, FileEmailSender>();
+
+        services.AddOptions<OutboxOptions>();
+        services.AddHostedService<OutboxProcessor>();
 
         return services;
     }

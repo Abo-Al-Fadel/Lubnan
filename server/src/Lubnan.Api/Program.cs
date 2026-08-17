@@ -4,6 +4,7 @@ using Lubnan.Api.Middleware;
 using Lubnan.Application;
 using Lubnan.Application.Abstractions.Http;
 using Lubnan.Infrastructure;
+using Lubnan.Infrastructure.Persistence.Outbox;
 using Lubnan.Infrastructure.Persistence.Seed;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -28,6 +29,9 @@ builder.Services
     .AddEndpoints(Lubnan.Application.DependencyInjection.Assembly)
     .AddHealth()
     .AddObservability(builder.Configuration);
+
+builder.Services.Configure<OutboxOptions>(
+    builder.Configuration.GetSection(OutboxOptions.SectionName));
 
 // Behind a proxy — Next.js rewrites, a load balancer, a platform router — the
 // connection address is the proxy's. Without this, every session row records
@@ -79,7 +83,13 @@ var allowedOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string
 
 builder.Services.AddCors(options => options.AddPolicy(CorsPolicy, policy => policy
     .WithOrigins(allowedOrigins)
-    .WithHeaders("Content-Type", "Accept", "Accept-Language", "Authorization", CorrelationIdMiddleware.HeaderName)
+    .WithHeaders(
+        "Content-Type",
+        "Accept",
+        "Accept-Language",
+        "Authorization",
+        AuthCookies.CsrfHeader,
+        CorrelationIdMiddleware.HeaderName)
     .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE")
     .WithExposedHeaders(CorrelationIdMiddleware.HeaderName, "Content-Language")
     .AllowCredentials()

@@ -110,7 +110,10 @@ internal sealed class Handler(
         // a reset.
         if (verification is PasswordVerification.SucceededButNeedsRehash)
         {
-            user.ChangePassword(passwords.Hash(command.Password), now);
+            // Rehash only. ChangePassword ends every session and mails the
+            // holder that their password moved, which is the wrong message
+            // for a silent work-factor upgrade on a successful sign-in.
+            user.RehashPassword(passwords.Hash(command.Password));
         }
 
         user.RecordSuccessfulSignIn(now, ipHash);

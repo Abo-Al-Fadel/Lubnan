@@ -57,3 +57,13 @@ export function cutoutCandidates(id: string): string[] {
 export function videoPath(id: string): string {
   return `/vid/${id}.mp4`;
 }
+
+/**
+ * Motion plates, lightest first.
+ *
+ * The raw A1 export is hundreds of megabytes. Prefer a web encode or a phone
+ * cut when someone has dropped one in; otherwise the full file still plays.
+ */
+export function videoCandidates(id: string): string[] {
+  return [`/vid/${id}-web.mp4`, `/vid/${id}-m.mp4`, `/vid/${id}M.mp4`, videoPath(id)];
+}

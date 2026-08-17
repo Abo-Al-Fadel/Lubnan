@@ -241,6 +241,77 @@ public sealed class IdentityEndpointTests(LubnanApiFactory factory)
         Assert.Equal("no-referrer", response.Headers.GetValues("Referrer-Policy").Single());
         Assert.Contains("frame-ancestors 'none'", response.Headers.GetValues("Content-Security-Policy").Single(), StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task A_csrf_token_of_the_wrong_length_is_forbidden_not_a_server_error()
+    {
+        var client = Client;
+        var email = UniqueEmail();
+
+        await client.PostAsJsonAsync(
+            "/api/v1/auth/register",
+            new { email, password = "a long enough passphrase", displayName = "Reader" })
+            .ConfigureAwait(true);
+
+        await factory.ConfirmAsync(email).ConfigureAwait(true);
+
+        await client.PostAsJsonAsync(
+            "/api/v1/auth/login",
+            new { email, password = "a long enough passphrase" }).ConfigureAwait(true);
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/logout");
+        request.Headers.TryAddWithoutValidation(AuthCookies.CsrfHeader, "short");
+
+        var response = await client.SendAsync(request).ConfigureAwait(true);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDto>(Json).ConfigureAwait(true);
+        Assert.Equal("request.csrf", problem!.Code);
+    }
+
+    [Fact]
+    public async Task Refreshing_a_signed_out_session_is_not_treated_as_theft()
+    {
+        var client = Client;
+        var email = UniqueEmail();
+
+        await client.PostAsJsonAsync(
+            "/api/v1/auth/register",
+            new { email, password = "a long enough passphrase", displayName = "Reader" })
+            .ConfigureAwait(true);
+
+        await factory.ConfirmAsync(email).ConfigureAwait(true);
+
+        var login = await client.PostAsJsonAsync(
+            "/api/v1/auth/login",
+            new { email, password = "a long enough passphrase" }).ConfigureAwait(true);
+
+        var setCookie = login.Headers.GetValues("Set-Cookie").ToList();
+        var refresh = setCookie.Single(c => c.StartsWith(AuthCookies.RefreshCookie, StringComparison.Ordinal));
+        var csrf = setCookie.Single(c => c.StartsWith(AuthCookies.CsrfCookie, StringComparison.Ordinal));
+        var csrfValue = csrf.Split(';')[0].Split('=')[1];
+
+        using var logout = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/logout");
+        logout.Headers.TryAddWithoutValidation(AuthCookies.CsrfHeader, csrfValue);
+        await client.SendAsync(logout).ConfigureAwait(true);
+
+        var replay = factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+        {
+            HandleCookies = false,
+        });
+
+        using var refreshRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/refresh");
+        refreshRequest.Headers.TryAddWithoutValidation(
+            "Cookie",
+            $"{refresh.Split(';')[0]}; {csrf.Split(';')[0]}");
+        refreshRequest.Headers.TryAddWithoutValidation(AuthCookies.CsrfHeader, csrfValue);
+
+        var response = await replay.SendAsync(refreshRequest).ConfigureAwait(true);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDto>(Json).ConfigureAwait(true);
+        Assert.Equal("auth.sessionEnded", problem!.Code);
+    }
 }
 
 public sealed record MeDto(

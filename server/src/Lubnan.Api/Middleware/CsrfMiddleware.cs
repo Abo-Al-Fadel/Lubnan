@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Text;
 using Lubnan.Application.Abstractions.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -63,10 +64,16 @@ internal sealed class CsrfMiddleware(RequestDelegate next)
         context.Request.Cookies.ContainsKey(AuthCookies.AccessCookie)
         || context.Request.Cookies.ContainsKey(AuthCookies.RefreshCookie);
 
-    private static bool Matches(string a, string b) =>
-        CryptographicOperations.FixedTimeEquals(
-            System.Text.Encoding.UTF8.GetBytes(a),
-            System.Text.Encoding.UTF8.GetBytes(b));
+    private static bool Matches(string a, string b)
+    {
+        // Hash first, then compare. FixedTimeEquals throws when the two
+        // buffers differ in length, which would turn a forged token of the
+        // wrong size into a 500 instead of a 403 — and the exception path is
+        // a timing oracle for "this guess was the right length".
+        var left = SHA256.HashData(Encoding.UTF8.GetBytes(a));
+        var right = SHA256.HashData(Encoding.UTF8.GetBytes(b));
+        return CryptographicOperations.FixedTimeEquals(left, right);
+    }
 
     private static async Task Reject(HttpContext context)
     {
