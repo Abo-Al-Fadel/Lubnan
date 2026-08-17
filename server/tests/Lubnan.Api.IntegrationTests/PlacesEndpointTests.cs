@@ -61,6 +61,18 @@ public sealed class PlacesEndpointTests(LubnanApiFactory factory)
     }
 
     [Fact]
+    public async Task A_spaced_region_label_matches_the_enum()
+    {
+        var response = await Client.GetAsync(new Uri("/api/v1/places?region=Mount%20Lebanon", UriKind.Relative))
+            .ConfigureAwait(true);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var places = await response.Content.ReadFromJsonAsync<List<PlaceSummaryDto>>(Json)
+            .ConfigureAwait(true);
+        Assert.Contains(places!, p => p.Slug == "jeita");
+    }
+
+    [Fact]
     public async Task An_unknown_filter_is_a_400_and_says_what_was_expected()
     {
         // Not an empty list. An empty list would let a typo read as "there is

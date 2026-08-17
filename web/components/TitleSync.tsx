@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
-import { getPlace } from '@/data/places';
+import { useCatalog } from '@/lib/catalog';
 import { useSite } from '@/lib/site-state';
 
 const KEYS: Record<string, string> = {
@@ -22,6 +22,7 @@ const KEYS: Record<string, string> = {
 export function TitleSync() {
   const pathname = usePathname();
   const { tr } = useSite();
+  const { getPlace } = useCatalog();
 
   useEffect(() => {
     const placeMatch = pathname.match(/^\/explore\/([^/]+)$/);
@@ -33,7 +34,7 @@ export function TitleSync() {
     const key = KEYS[pathname];
     document.title = key ? `${tr(key)} · Lubnān` : 'Lubnān';
     if (pathname === '/') document.title = 'Lubnān';
-  }, [pathname, tr]);
+  }, [pathname, tr, getPlace]);
 
   return null;
 }

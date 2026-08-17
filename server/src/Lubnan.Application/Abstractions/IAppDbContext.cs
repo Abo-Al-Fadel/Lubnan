@@ -1,4 +1,6 @@
+using Lubnan.Domain.Community;
 using Lubnan.Domain.Places;
+using Lubnan.Domain.Saved;
 using Lubnan.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
@@ -27,6 +29,10 @@ public interface IAppDbContext
     DbSet<PlaceTranslation> PlaceTranslations { get; }
 
     DbSet<User> Users { get; }
+
+    DbSet<CommunityPost> CommunityPosts { get; }
+
+    DbSet<SavedPlace> SavedPlaces { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

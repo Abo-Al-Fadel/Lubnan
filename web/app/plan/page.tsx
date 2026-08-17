@@ -5,7 +5,7 @@ import { PageShell, PageBanner } from '@/components/PageShell';
 import { PhotoField } from '@/components/ui/PhotoField';
 import { FlightBoard } from '@/components/ui/FlightBoard';
 import { useSite } from '@/lib/site-state';
-import { places } from '@/data/places';
+import { useCatalog } from '@/lib/catalog';
 
 /* Monthly climate. Real numbers, drawn — the band is data, not decoration. */
 const MONTHS = [
@@ -80,6 +80,7 @@ const TRANSFERS = [
 
 export default function PlanPage() {
   const { tr } = useSite();
+  const { places } = useCatalog();
   const [open, setOpen] = useState(0);
   const [sheet, setSheet] = useState(false);
   const [days, setDays] = useState(5);

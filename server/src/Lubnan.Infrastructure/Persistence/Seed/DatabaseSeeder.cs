@@ -1,8 +1,11 @@
 using System.Reflection;
 using System.Text.Json;
 using Lubnan.Application.Abstractions;
+using Lubnan.Application.Abstractions.Security;
 using Lubnan.Domain.Common;
+using Lubnan.Domain.Community;
 using Lubnan.Domain.Places;
+using Lubnan.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -28,7 +31,11 @@ namespace Lubnan.Infrastructure.Persistence.Seed;
 /// races between replicas and, on the day it goes wrong, writes to production.
 /// </para>
 /// </remarks>
-public sealed class DatabaseSeeder(AppDbContext db, IClock clock, ILogger<DatabaseSeeder> logger)
+public sealed class DatabaseSeeder(
+    AppDbContext db,
+    IClock clock,
+    IPasswordHasher passwords,
+    ILogger<DatabaseSeeder> logger)
 {
     private const string ResourceName = "Lubnan.Infrastructure.Persistence.Seed.places.seed.json";
 
@@ -63,7 +70,82 @@ public sealed class DatabaseSeeder(AppDbContext db, IClock clock, ILogger<Databa
             await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        logger.Seeded(added, seeds.Count - added);
+        var community = await SeedCommunityAsync(cancellationToken).ConfigureAwait(false);
+
+        logger.Seeded(added, seeds.Count - added, community);
+        return added + community;
+    }
+
+    private async Task<int> SeedCommunityAsync(CancellationToken cancellationToken)
+    {
+        if (await db.CommunityPosts.AnyAsync(cancellationToken).ConfigureAwait(false))
+        {
+            return 0;
+        }
+
+        var now = clock.UtcNow;
+        var hash = passwords.Hash($"seed-{Guid.NewGuid():N}-not-a-login");
+        var authors = new (string Email, string Name)[]
+        {
+            ("rania.k@seed.lubnan.invalid", "Rania K."),
+            ("marc.h@seed.lubnan.invalid", "Marc H."),
+            ("yara.s@seed.lubnan.invalid", "Yara S."),
+            ("elias.n@seed.lubnan.invalid", "Elias N."),
+        };
+
+        var users = new List<User>(authors.Length);
+        foreach (var (address, name) in authors)
+        {
+            var email = Email.Create(address).Value;
+            var existing = await db.Users
+                .FirstOrDefaultAsync(u => u.Email == email, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (existing is not null)
+            {
+                users.Add(existing);
+                continue;
+            }
+
+            var user = User.Register(email, DisplayName.Create(name).Value, hash, now).Value;
+            user.ConfirmEmail(now);
+            db.Users.Add(user);
+            users.Add(user);
+        }
+
+        var captions = new (string Slug, string Plate, string Body)[]
+        {
+            ("qadisha", "D1", "Took the long path down from Bsharri. Three hours, one monastery cut into the cliff, and a man who insisted I take his thermos."),
+            ("batroun", "D2", "The lemonade stand everyone tells you about is real, and it is worth the queue."),
+            ("tyre", "D3", "Hippodrome at seven in the morning, completely empty. Two thousand years of chariot racing and one stray cat."),
+            ("beirut", "D4", "Sunset from the Corniche. Half the city is out walking and someone is always selling corn."),
+            ("cedars", "Q5", "Snow on the road above Bsharri closed it for two days. Worth waiting for."),
+            ("beirut", "Q6", "Mezze that arrived in nine plates when we ordered four. Standard."),
+            ("baalbek", "Q7", "Baalbek at golden hour. The columns are twenty-two metres and photographs do not carry it."),
+            ("batroun", "Q8", "Diving off the rocks at Batroun. Water was colder than it looks here."),
+            ("baalbek", "Q9", "Vineyard lunch in the Bekaa. Long table, dappled light, nobody left before dark."),
+            ("tyre", "Q10", "First light at Tyre harbour. The boats go out before the tourists arrive."),
+            ("jeita", "Q11", "Jeita from the boat. No cameras allowed inside so this is the entrance."),
+            ("byblos", "Q12", "Byblos harbour, same size it has been for three thousand years."),
+        };
+
+        var added = 0;
+        for (var i = 0; i < captions.Length; i++)
+        {
+            var (slug, plate, body) = captions[i];
+            var author = users[i % users.Count];
+            var published = CommunityPost.Publish(
+                author.Id, body, slug, plate, now.AddHours(-(1 + (i * 3 % 20))));
+            if (published.IsFailure)
+            {
+                throw new InvalidOperationException($"Community seed {i} is invalid: {published.Error.Message}");
+            }
+
+            db.CommunityPosts.Add(published.Value);
+            added++;
+        }
+
+        await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         return added;
     }
 
@@ -154,6 +236,6 @@ internal static partial class DatabaseSeederMessages
     [LoggerMessage(
         EventId = 2000,
         Level = LogLevel.Information,
-        Message = "Seed complete: {Added} places added, {Skipped} already present.")]
-    public static partial void Seeded(this ILogger logger, int added, int skipped);
+        Message = "Seed complete: {Added} places added, {Skipped} already present, {Community} community posts.")]
+    public static partial void Seeded(this ILogger logger, int added, int skipped, int community);
 }

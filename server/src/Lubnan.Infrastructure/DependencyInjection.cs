@@ -1,6 +1,7 @@
 using Lubnan.Application.Abstractions;
 using Lubnan.Application.Abstractions.Security;
 using Lubnan.Application.Features.Identity;
+using Lubnan.Infrastructure.Flights;
 using Lubnan.Infrastructure.Mail;
 using Lubnan.Infrastructure.Persistence;
 using Lubnan.Infrastructure.Persistence.Interceptors;
@@ -86,6 +87,15 @@ public static class DependencyInjection
 
         services.AddOptions<OutboxOptions>();
         services.AddHostedService<OutboxProcessor>();
+
+        services.AddHttpClient<IFlightBoard, BeirutAirportFlightBoard>(client =>
+        {
+            client.BaseAddress = new Uri("https://www.beirutairport.gov.lb/");
+            client.Timeout = TimeSpan.FromSeconds(8);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(
+                "Lubnan/1.0 (+https://github.com/Abo-Al-Fadel/Lubnan)");
+            client.DefaultRequestHeaders.Accept.ParseAdd("text/html");
+        });
 
         return services;
     }

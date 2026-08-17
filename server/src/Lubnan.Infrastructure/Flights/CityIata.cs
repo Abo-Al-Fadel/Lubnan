@@ -1,0 +1,67 @@
+namespace Lubnan.Infrastructure.Flights;
+
+/// <summary>City name on the BEY board → IATA, for the codes the UI already shows.</summary>
+internal static class CityIata
+{
+    private static readonly Dictionary<string, string> Map = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Paris"] = "CDG",
+        ["London"] = "LHR",
+        ["Istanbul"] = "IST",
+        ["Dubai"] = "DXB",
+        ["Doha"] = "DOH",
+        ["Cairo"] = "CAI",
+        ["Rome"] = "FCO",
+        ["Frankfurt"] = "FRA",
+        ["Amman"] = "AMM",
+        ["Athens"] = "ATH",
+        ["Larnaca"] = "LCA",
+        ["Abu Dhabi"] = "AUH",
+        ["Sharjah"] = "SHJ",
+        ["Jeddah"] = "JED",
+        ["Jedda"] = "JED",
+        ["Riyadh"] = "RUH",
+        ["Baghdad"] = "BGW",
+        ["Basra"] = "BSR",
+        ["Najaf"] = "NJF",
+        ["Yerevan"] = "EVN",
+        ["Milan"] = "MXP",
+        ["Milano"] = "MXP",
+        ["Lyon"] = "LYS",
+        ["Mersin"] = "ADA",
+        ["Addis Ababa"] = "ADD",
+        ["Addis Abeba"] = "ADD",
+        ["Kuwait"] = "KWI",
+        ["Damascus"] = "DAM",
+        ["Damascus Intl"] = "DAM",
+        ["Nice"] = "NCE",
+        ["Geneva"] = "GVA",
+        ["Bruxelles"] = "BRU",
+        ["Brussels"] = "BRU",
+        ["Madrid"] = "MAD",
+        ["Barcelona"] = "BCN",
+        ["Munich"] = "MUC",
+        ["Vienna"] = "VIE",
+        ["Berlin"] = "BER",
+        ["Copenhagen"] = "CPH",
+        ["Stockholm"] = "ARN",
+        ["Moscow"] = "SVO",
+        ["Erbil"] = "EBL",
+        ["Sulaymaniyah"] = "ISU",
+        ["Tehran"] = "IKA",
+        ["Accra"] = "ACC",
+        ["Lagos"] = "LOS",
+        ["Abidjan"] = "ABJ",
+        ["Sao Paulo"] = "GRU",
+        ["São Paulo"] = "GRU",
+        ["Detroit"] = "DTW",
+        ["New York"] = "JFK",
+        ["Washington"] = "IAD",
+        ["Toronto"] = "YYZ",
+        ["Montreal"] = "YUL",
+        ["Montréal"] = "YUL",
+    };
+
+    public static string? Lookup(string city) =>
+        Map.TryGetValue(city.Trim(), out var code) ? code : null;
+}

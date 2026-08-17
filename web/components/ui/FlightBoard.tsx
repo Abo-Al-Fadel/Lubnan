@@ -1,8 +1,15 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSite } from '@/lib/site-state';
-import { AIRPORT, ARRIVALS, DEPARTURES, type Flight, type FlightStatus } from '@/data/flights';
+import {
+  AIRPORT,
+  FALLBACK_ARRIVALS,
+  FALLBACK_DEPARTURES,
+  fetchFlights,
+  type Flight,
+  type FlightStatus,
+} from '@/lib/flights';
 
 /**
  * The departures board.
@@ -20,31 +27,52 @@ const STATUS_TOKEN: Record<FlightStatus, { dot: string; key: string }> = {
   delayed: { dot: 'var(--status-warn)', key: 'flight.delayed' },
   landed: { dot: 'var(--ink-faint)', key: 'flight.landed' },
   departed: { dot: 'var(--ink-faint)', key: 'flight.departed' },
+  cancelled: { dot: 'var(--status-warn)', key: 'flight.cancelled' },
 };
 
 export function FlightBoard() {
   const { tr } = useSite();
   const [mode, setMode] = useState<'departures' | 'arrivals'>('departures');
   const [query, setQuery] = useState('');
+  const [live, setLive] = useState(false);
+  const [arrivals, setArrivals] = useState<Flight[]>(FALLBACK_ARRIVALS);
+  const [departures, setDepartures] = useState<Flight[]>(FALLBACK_DEPARTURES);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      const board = await fetchFlights();
+      if (cancelled) return;
+      setLive(board.live);
+      setArrivals(board.arrivals);
+      setDepartures(board.departures);
+    };
+    void load();
+    const id = window.setInterval(() => void load(), 180_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, []);
 
   const rows = useMemo(() => {
-    const source = mode === 'departures' ? DEPARTURES : ARRIVALS;
+    const source = mode === 'departures' ? departures : arrivals;
     const q = query.trim().toLowerCase();
     const filtered = q
       ? source.filter((f) =>
-          `${f.code} ${f.airline} ${f.city} ${f.iata} ${f.country}`.toLowerCase().includes(q),
+          `${f.code} ${f.airline} ${f.city} ${f.iata ?? ''} ${f.country}`.toLowerCase().includes(q),
         )
       : source;
     return [...filtered].sort((a, b) => a.time.localeCompare(b.time));
-  }, [mode, query]);
+  }, [mode, query, arrivals, departures]);
 
   return (
     <div className="border border-ink-ghost bg-ground">
-      {/* Board head */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-ink-ghost p-4 md:p-6">
         <div>
           <p className="micro text-ink-dim">
             {AIRPORT.iata} · {AIRPORT.icao} · {AIRPORT.distanceKm} km {tr('flight.fromCity')}
+            {live ? ` · ${tr('flight.live')}` : ''}
           </p>
           <p className="mt-2 font-display text-lg uppercase tracking-wide text-ink md:text-xl">
             {AIRPORT.name}
@@ -70,7 +98,6 @@ export function FlightBoard() {
         </div>
       </div>
 
-      {/* Filter */}
       <div className="border-b border-ink-ghost p-4 md:px-6">
         <label htmlFor="flight-q" className="sr-only">
           {tr('flight.filter')}
@@ -85,7 +112,6 @@ export function FlightBoard() {
         />
       </div>
 
-      {/* The board itself */}
       <div className="overflow-x-auto">
         <table className="w-full min-w-[40rem] border-collapse text-left">
           <caption className="sr-only">
@@ -104,7 +130,7 @@ export function FlightBoard() {
           </thead>
           <tbody>
             {rows.map((f) => (
-              <Row key={f.code} flight={f} />
+              <Row key={`${f.code}-${f.time}-${f.city}`} flight={f} />
             ))}
           </tbody>
         </table>
@@ -115,7 +141,7 @@ export function FlightBoard() {
       ) : null}
 
       <p className="micro border-t border-ink-ghost px-4 py-4 leading-[1.7] text-ink-dim md:px-6">
-        {tr('flight.disclaimer')}
+        {live ? tr('flight.disclaimerLive') : tr('flight.disclaimer')}
       </p>
     </div>
   );
@@ -123,8 +149,9 @@ export function FlightBoard() {
 
 function Row({ flight: f }: { flight: Flight }) {
   const { tr } = useSite();
-  const token = STATUS_TOKEN[f.status];
-  const past = f.status === 'landed' || f.status === 'departed';
+  const token = STATUS_TOKEN[f.status] ?? STATUS_TOKEN['on-time'];
+  const past = f.status === 'landed' || f.status === 'departed' || f.status === 'cancelled';
+  const stand = [f.terminal, f.gate].filter((part) => part && part !== '—').join(' · ') || '—';
 
   return (
     <tr className={`border-b border-ink-ghost last:border-b-0 ${past ? 'opacity-55' : ''}`}>
@@ -140,13 +167,10 @@ function Row({ flight: f }: { flight: Flight }) {
       </td>
       <td className="px-4 py-3.5 md:px-6">
         <span className="text-sm text-ink">{f.city}</span>
-        <span className="micro ms-2 text-ink-dim">{f.iata}</span>
+        {f.iata ? <span className="micro ms-2 text-ink-dim">{f.iata}</span> : null}
       </td>
-      <td className="figures px-4 py-3.5 text-sm text-ink-dim md:px-6">
-        {f.terminal} · {f.gate}
-      </td>
+      <td className="figures px-4 py-3.5 text-sm text-ink-dim md:px-6">{stand}</td>
       <td className="px-4 py-3.5 md:px-6">
-        {/* Dot, word and delta. Colour alone is not the signal. */}
         <span className="micro inline-flex items-center gap-2 whitespace-nowrap text-ink-dim">
           <span
             aria-hidden="true"

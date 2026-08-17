@@ -2,23 +2,20 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useMediaQuery } from '@/lib/media';
-import { PLATE_EXTENSIONS, phoneCandidates, platePath, videoCandidates } from '@/lib/plates';
+import { PLATE_EXTENSIONS, platePath, videoCandidates } from '@/lib/plates';
 
 /**
  * An image slot.
  *
- * Pass a `plate` ID and it resolves `/img/<plate>.png`, then `.jpg`. On phones
- * it also looks for `<plate>-m.png` / `.jpg` and uses that instead when it
- * exists. If nothing resolves it falls back to a tonal field in the palette's
+ * Pass a `plate` ID and it resolves `/img/<plate>.png`, then `.jpg`. The same
+ * file is used on every viewport — phones crop with `object-cover` rather than
+ * swapping in a different plate. A separate phone still (A1M and the like)
+ * made the first frame a different photograph from desktop, and leftover
+ * inspect-mode state could lock that crop onto a wide window.
+ *
+ * If nothing resolves it falls back to a tonal field in the palette's
  * photographic range, so the page works with zero, some, or all plates present
  * and dropping a correctly named file into /public/img is the whole job.
- *
- * The phone variant is *probed* with an off-DOM Image() and only swapped in on
- * a successful load. An earlier version tried to express this as
- * `<source srcSet="…-m.png, ….png">`, which cannot work: srcset picks its
- * candidate before fetching, so a 404 never re-selects and a phone missing the
- * -m file would show the placeholder while the landscape plate sat unused.
- * Probing costs one extra request on phones and is honest about what exists.
  */
 export function PhotoField({
   brief,
@@ -46,7 +43,6 @@ export function PhotoField({
   children?: React.ReactNode;
 }) {
   const [extIndex, setExtIndex] = useState(0);
-  const [phoneSrc, setPhoneSrc] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [videoSrc, setVideoSrc] = useState<string | null>(null);
   const [videoReady, setVideoReady] = useState(false);
@@ -57,37 +53,11 @@ export function PhotoField({
 
   useEffect(() => {
     setExtIndex(0);
-    if (!plate) {
-      setPhoneSrc(null);
-      return;
-    }
-    if (!isPhone) {
-      setPhoneSrc(null);
-      return;
-    }
-
-    const candidates = phoneCandidates(plate);
-
-    let cancelled = false;
-    const probe = (i: number) => {
-      if (cancelled || i >= candidates.length) return;
-      const url = candidates[i];
-      const img = new window.Image();
-      img.onload = () => {
-        if (!cancelled) setPhoneSrc(url);
-      };
-      img.onerror = () => probe(i + 1);
-      img.src = url;
-    };
-    probe(0);
-    return () => {
-      cancelled = true;
-    };
-  }, [plate, isPhone]);
+  }, [plate]);
 
   const exhausted = extIndex >= PLATE_EXTENSIONS.length;
-  const src = phoneSrc ?? (plate ? platePath(plate, PLATE_EXTENSIONS[extIndex]) : null);
-  const showImage = Boolean(src) && (!exhausted || Boolean(phoneSrc));
+  const src = plate && !exhausted ? platePath(plate, PLATE_EXTENSIONS[extIndex]) : null;
+  const showImage = Boolean(src);
 
   /**
    * Catch images that finished before React attached its handlers.
@@ -109,9 +79,8 @@ export function PhotoField({
     const el = imgRef.current;
     if (!el || !el.complete) return;
     if (el.naturalWidth > 0) setLoaded(true);
-    else if (phoneSrc) setPhoneSrc(null);
     else setExtIndex((i) => i + 1);
-  }, [src, phoneSrc]);
+  }, [src]);
 
   /**
    * The motion plate.
@@ -270,8 +239,7 @@ export function PhotoField({
             ...(objectPosition ? { objectPosition } : {}),
           }}
           onError={() => {
-            if (phoneSrc) setPhoneSrc(null);
-            else setExtIndex((i) => i + 1);
+            setExtIndex((i) => i + 1);
           }}
           loading={priority ? 'eager' : 'lazy'}
           fetchPriority={priority ? 'high' : 'auto'}

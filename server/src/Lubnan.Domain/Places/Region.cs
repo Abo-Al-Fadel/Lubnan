@@ -19,6 +19,29 @@ public enum Region
     Bekaa,
 }
 
+/// <summary>
+/// Accepts both the enum name and the label the site shows: <c>MountLebanon</c>
+/// and <c>Mount Lebanon</c> are the same region.
+/// </summary>
+public static class RegionNames
+{
+    public static bool TryParse(string? value, out Region region)
+    {
+        region = default;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        var compact = value
+            .Replace(" ", string.Empty, StringComparison.Ordinal)
+            .Replace("-", string.Empty, StringComparison.Ordinal)
+            .Replace("_", string.Empty, StringComparison.Ordinal);
+
+        return Enum.TryParse(compact, ignoreCase: true, out region);
+    }
+}
+
 /// <summary>What kind of place it is; drives the filter chips and the icon.</summary>
 public enum PlaceCategory
 {

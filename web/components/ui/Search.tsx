@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import destinations from '@/data/destinations.json';
 import secrets from '@/data/secrets.json';
+import { useCatalog } from '@/lib/catalog';
 import { useSite } from '@/lib/site-state';
 
 type Result = {
@@ -15,43 +15,46 @@ type Result = {
   href: string;
 };
 
-const INDEX: Result[] = [
-  ...destinations.map((d) => ({
-    id: d.id,
-    kind: 'Destination' as const,
-    title: d.name,
-    meta: `${d.region} · ${d.localName} · ${d.arabic}`,
-    body: d.note,
-    href: `/explore/${d.id}`,
-  })),
-  ...secrets.map((s) => ({
-    id: `secret-${s.index}`,
-    kind: 'Story' as const,
-    title: s.title,
-    meta: `Secrets · ${s.index}`,
-    body: s.body,
-    href: '/#secrets',
-  })),
-];
-
 /**
- * Search over the local mock CMS. Filtering is real — it reads the same JSON
- * files a live API will replace 1:1, so swapping in a backend changes the
- * data source and nothing about this component.
+ * Search over the live catalogue, with the editorial secrets as a second
+ * index. Destinations come from the Places API when it is up.
  */
 export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { tr } = useSite();
+  const { places } = useCatalog();
   const [q, setQ] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
+  const index = useMemo<Result[]>(
+    () => [
+      ...places.map((d) => ({
+        id: d.id,
+        kind: 'Destination' as const,
+        title: d.name,
+        meta: `${d.region} · ${d.localName} · ${d.arabic}`,
+        body: d.note,
+        href: `/explore/${d.id}`,
+      })),
+      ...secrets.map((s) => ({
+        id: `secret-${s.index}`,
+        kind: 'Story' as const,
+        title: s.title,
+        meta: `Secrets · ${s.index}`,
+        body: s.body,
+        href: '/#secrets',
+      })),
+    ],
+    [places],
+  );
+
   const results = useMemo(() => {
     const term = q.trim().toLowerCase();
     if (!term) return [];
-    return INDEX.filter((r) =>
+    return index.filter((r) =>
       `${r.title} ${r.meta} ${r.body}`.toLowerCase().includes(term),
     ).slice(0, 8);
-  }, [q]);
+  }, [q, index]);
 
   useEffect(() => {
     if (!open) return;

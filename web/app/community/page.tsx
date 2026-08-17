@@ -1,92 +1,195 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { Navbar, SiteFooter } from '@/components/sections/Chrome';
 import { PhotoField } from '@/components/ui/PhotoField';
 import { Heart } from '@/components/ui/Subjects';
 import { useSite } from '@/lib/site-state';
 import { useAuth } from '@/lib/auth';
-import { REGIONS, places } from '@/data/places';
-import posts from '@/data/posts.json';
+import { ApiError } from '@/lib/api';
+import {
+  addComment,
+  createPost,
+  listPosts,
+  relativeTime,
+  toggleLike,
+  type CommunityPost,
+} from '@/lib/community';
+import { REGIONS, useCatalog } from '@/lib/catalog';
 
 /**
- * A feed, not a gallery.
+ * A feed backed by the API.
  *
- * The previous version was a masonry grid of images — which is a *portfolio*
- * layout, and reading it required opening a modal to see anything. A social
- * feed is a single narrow column you scroll: author, image, actions, caption,
- * replies, all inline, one post at a time. Nothing is hidden behind a click.
- *
- * The column is capped at 34rem because a feed's job is to be read at a fixed
- * comfortable width no matter how wide the window gets — the same reason
- * Instagram and LinkedIn don't reflow their posts to fill a desktop monitor.
+ * Likes and comments are authorised on the server. The session cookie names
+ * the author — a request body cannot post or like as someone else. Guests
+ * can read; writing without a session is 401.
  */
-
-const AUTHORS = [
-  { name: 'Rania K.', handle: 'raniak', bio: 'Qadisha, mostly' },
-  { name: 'Marc H.', handle: 'marc.h', bio: 'Batroun · photographs food' },
-  { name: 'Yara S.', handle: 'yaras', bio: 'Tyre → Beirut' },
-  { name: 'Elias N.', handle: 'eliasn', bio: 'Corniche every evening' },
-];
-
-const CAPTIONS = [
-  'Took the long path down from Bsharri. Three hours, one monastery cut into the cliff, and a man who insisted I take his thermos.',
-  'The lemonade stand everyone tells you about is real, and it is worth the queue.',
-  'Hippodrome at seven in the morning, completely empty. Two thousand years of chariot racing and one stray cat.',
-  'Sunset from the Corniche. Half the city is out walking and someone is always selling corn.',
-  'Snow on the road above Bsharri closed it for two days. Worth waiting for.',
-  'Mezze that arrived in nine plates when we ordered four. Standard.',
-  'Baalbek at golden hour. The columns are twenty-two metres and photographs do not carry it.',
-  'Diving off the rocks at Batroun. Water was colder than it looks here.',
-  'Vineyard lunch in the Bekaa. Long table, dappled light, nobody left before dark.',
-  'First light at Tyre harbour. The boats go out before the tourists arrive.',
-  'Jeita from the boat. No cameras allowed inside so this is the entrance.',
-  'Byblos harbour, same size it has been for three thousand years.',
-];
-
-const PLATES = ['D1', 'D2', 'D3', 'D4', 'Q5', 'Q6', 'Q7', 'Q8', 'Q9', 'Q10', 'Q11', 'Q12'];
-
-const FEED = Array.from({ length: 12 }, (_, i) => {
-  const author = AUTHORS[i % AUTHORS.length];
-  const place = places[i % places.length];
-  return {
-    id: `p${i + 1}`,
-    author,
-    place: place.name,
-    region: place.region,
-    placeId: place.id,
-    plate: PLATES[i],
-    caption: CAPTIONS[i],
-    likes: 38 + ((i * 47) % 260),
-    comments: 2 + ((i * 7) % 21),
-    when: `${1 + ((i * 3) % 20)}h`,
-    tall: i % 4 === 1,
-  };
-});
 
 export default function CommunityPage() {
   const { tr } = useSite();
-  const { me } = useAuth();
-  const [liked, setLiked] = useState<Record<string, boolean>>({});
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const { me, ready } = useAuth();
+  const { places } = useCatalog();
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [region, setRegion] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
+  const [placeSlug, setPlaceSlug] = useState('');
+  const [publishing, setPublishing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [openComments, setOpenComments] = useState<Record<string, boolean>>({});
+  const [reply, setReply] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState<Record<string, boolean>>({});
 
-  const shown = useMemo(
-    () => (region ? FEED.filter((p) => p.region === region) : FEED),
-    [region],
-  );
+  const load = useCallback(async (nextRegion: string | null) => {
+    setLoading(true);
+    setError(null);
+    try {
+      setPosts(await listPosts(nextRegion));
+    } catch (err) {
+      setPosts([]);
+      setError(err instanceof ApiError && err.status === 0
+        ? tr('community.errorNetwork')
+        : tr('community.errorLoad'));
+    } finally {
+      setLoading(false);
+    }
+  }, [tr]);
+
+  useEffect(() => {
+    if (!ready) return;
+    void load(region);
+  }, [ready, region, load]);
+
+  const contributors = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const post of posts) {
+      if (!seen.has(post.author.id)) seen.set(post.author.id, post.author.displayName);
+    }
+    return Array.from(seen.entries()).slice(0, 6);
+  }, [posts]);
+
+  const trending = useMemo(() => {
+    const counts = new Map<string, { name: string; slug: string; n: number }>();
+    for (const post of posts) {
+      if (!post.placeSlug) continue;
+      const cur = counts.get(post.placeSlug);
+      counts.set(post.placeSlug, {
+        slug: post.placeSlug,
+        name: post.placeName ?? post.placeSlug,
+        n: (cur?.n ?? 0) + 1,
+      });
+    }
+    return Array.from(counts.values()).sort((a, b) => b.n - a.n).slice(0, 5);
+  }, [posts]);
+
+  const needSignIn = () => {
+    setNotice(tr('community.signInToAct'));
+  };
+
+  const onPublish = async () => {
+    if (!me) {
+      needSignIn();
+      return;
+    }
+    const body = draft.trim();
+    if (!body || publishing) return;
+    setPublishing(true);
+    setNotice(null);
+    try {
+      const post = await createPost(body, placeSlug || undefined);
+      setPosts((list) => [post, ...list]);
+      setDraft('');
+      setPlaceSlug('');
+    } catch (err) {
+      setNotice(err instanceof ApiError && err.status === 401
+        ? tr('community.signInToAct')
+        : tr('community.errorPost'));
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const onLike = async (post: CommunityPost) => {
+    if (!me) {
+      needSignIn();
+      return;
+    }
+    if (busy[post.id]) return;
+    setBusy((s) => ({ ...s, [post.id]: true }));
+    setPosts((list) =>
+      list.map((p) =>
+        p.id === post.id
+          ? {
+              ...p,
+              likedByMe: !p.likedByMe,
+              likeCount: p.likeCount + (p.likedByMe ? -1 : 1),
+            }
+          : p,
+      ),
+    );
+    try {
+      const state = await toggleLike(post.id);
+      setPosts((list) =>
+        list.map((p) =>
+          p.id === post.id ? { ...p, likedByMe: state.liked, likeCount: state.likeCount } : p,
+        ),
+      );
+    } catch (err) {
+      setPosts((list) =>
+        list.map((p) => (p.id === post.id ? post : p)),
+      );
+      setNotice(err instanceof ApiError && err.status === 401
+        ? tr('community.signInToAct')
+        : tr('community.errorLike'));
+    } finally {
+      setBusy((s) => ({ ...s, [post.id]: false }));
+    }
+  };
+
+  const onComment = async (postId: string) => {
+    if (!me) {
+      needSignIn();
+      return;
+    }
+    const body = (reply[postId] ?? '').trim();
+    if (!body || busy[`c-${postId}`]) return;
+    setBusy((s) => ({ ...s, [`c-${postId}`]: true }));
+    try {
+      const comment = await addComment(postId, body);
+      setPosts((list) =>
+        list.map((p) =>
+          p.id === postId ? { ...p, comments: [...p.comments, comment] } : p,
+        ),
+      );
+      setReply((s) => ({ ...s, [postId]: '' }));
+    } catch (err) {
+      setNotice(err instanceof ApiError && err.status === 401
+        ? tr('community.signInToAct')
+        : tr('community.errorComment'));
+    } finally {
+      setBusy((s) => ({ ...s, [`c-${postId}`]: false }));
+    }
+  };
+
+  const onShare = async (id: string) => {
+    const url = `${window.location.origin}/community#${id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setNotice(tr('community.copied'));
+    } catch {
+      setNotice(url);
+    }
+  };
 
   return (
     <div data-palette="cedar" className="bg-band">
       <Navbar />
 
       <main id="main" className="px-4 pb-24 pt-28 md:px-8 md:pt-32">
-        {/* The feed is chrome-light by design, but a page still needs a
-            heading. Visually hidden rather than absent. */}
         <h1 className="sr-only">{tr('community.pageTitle')}</h1>
-        {/* Filter bar sits above the feed and stays put — the only chrome. */}
         <div className="sticky top-[4.5rem] z-30 -mx-4 mb-6 border-b border-ink-ghost px-4 py-3 backdrop-blur-xl md:top-[5.5rem] md:-mx-8 md:px-8">
           <div
             className="absolute inset-0 -z-10"
@@ -124,9 +227,7 @@ export default function CommunityPage() {
         </div>
 
         <div className="mx-auto grid max-w-[74rem] grid-cols-1 gap-10 lg:grid-cols-[minmax(0,34rem)_minmax(0,1fr)] lg:justify-center">
-          {/* ── The column ────────────────────────────────────────────── */}
           <div className="flex flex-col gap-5">
-            {/* Compose */}
             <div className="rounded-xl border border-ink-ghost bg-ground p-4">
               <div className="flex gap-3">
                 <Avatar name={me?.displayName ?? tr('community.you')} />
@@ -141,72 +242,94 @@ export default function CommunityPage() {
                     onChange={(e) => setDraft(e.target.value)}
                     placeholder={me ? tr('community.composePlaceholder') : tr('community.signInToPost')}
                     disabled={!me}
+                    maxLength={2000}
                     className="w-full resize-none border-0 bg-transparent p-0 text-sm leading-relaxed text-ink outline-none placeholder:text-ink-dim disabled:opacity-70"
                   />
                 </div>
               </div>
               {draft && me ? (
-                <div className="mt-3 flex items-center justify-between gap-3 border-t border-ink-ghost pt-3">
-                  <p className="micro text-ink-dim">{tr('community.composeNote')}</p>
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-ink-ghost pt-3">
+                  <label className="micro text-ink-dim">
+                    <span className="sr-only">{tr('community.place')}</span>
+                    <select
+                      value={placeSlug}
+                      onChange={(e) => setPlaceSlug(e.target.value)}
+                      className="bg-transparent text-ink outline-none"
+                    >
+                      <option value="">{tr('community.anyPlace')}</option>
+                      {places.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                   <button
                     type="button"
-                    onClick={() => {
-                      setDraft('');
-                      setNotice(tr('community.composeNote'));
-                    }}
-                    className="micro rounded-full bg-accent px-4 py-2 text-[color:var(--accent-ink)]"
+                    onClick={() => void onPublish()}
+                    disabled={publishing}
+                    className="micro rounded-full bg-accent px-4 py-2 text-[color:var(--accent-ink)] disabled:opacity-60"
                   >
-                    {tr('community.post')}
+                    {publishing ? tr('community.posting') : tr('community.post')}
                   </button>
                 </div>
               ) : null}
               {notice ? (
                 <p className="micro mt-3 text-ink-dim" role="status">
-                  {notice}
+                  {notice}{' '}
+                  {!me ? (
+                    <Link href="/login" className="tap text-ink underline-offset-2 hover:underline">
+                      {tr('nav.login')}
+                    </Link>
+                  ) : null}
                 </p>
               ) : null}
             </div>
 
-            {shown.length === 0 ? (
+            {loading ? (
+              <p className="py-8 text-sm text-ink-dim">{tr('community.loading')}</p>
+            ) : null}
+            {error ? (
+              <p className="py-8 text-sm text-ink-dim" role="alert">
+                {error}
+              </p>
+            ) : null}
+            {!loading && !error && posts.length === 0 ? (
               <p className="py-8 text-sm text-ink-dim">{tr('community.empty')}</p>
             ) : null}
 
-            {shown.map((p) => {
-              const isLiked = Boolean(liked[p.id]);
+            {posts.map((p) => {
               const isOpen = Boolean(expanded[p.id]);
+              const commentsOpen = Boolean(openComments[p.id]);
               return (
-                <article key={p.id} className="rounded-xl border border-ink-ghost bg-ground">
-                  {/* Author row */}
+                <article
+                  key={p.id}
+                  id={p.id}
+                  className="rounded-xl border border-ink-ghost bg-ground"
+                >
                   <header className="flex items-center gap-3 p-4">
-                    <Avatar name={p.author.name} />
+                    <Avatar name={p.author.displayName} />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-ink">{p.author.name}</p>
+                      <p className="truncate text-sm font-semibold text-ink">{p.author.displayName}</p>
                       <p className="micro mt-1 truncate text-ink-dim">
-                        <a href={`/explore/${p.placeId}`} className="tap hover:text-accent">
-                          {p.place}
-                        </a>{' '}
-                        · {p.when}
+                        {p.placeSlug ? (
+                          <Link href={`/explore/${p.placeSlug}`} className="tap hover:text-accent">
+                            {p.placeName ?? p.placeSlug}
+                          </Link>
+                        ) : (
+                          tr('community.anyPlace')
+                        )}{' '}
+                        · {relativeTime(p.createdAt)}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      aria-label={tr('community.more')}
-                      disabled
-                      title={tr('community.comingSoon')}
-                      className="shrink-0 px-2 text-ink-dim opacity-40"
-                    >
-                      ···
-                    </button>
                   </header>
 
-                  {/* Caption above the image, LinkedIn-style — the words are
-                      why you stop scrolling, not the photograph. */}
                   <p className="px-4 pb-3 text-sm leading-relaxed text-ink">
-                    {isOpen || p.caption.length < 92 ? (
-                      p.caption
+                    {isOpen || p.body.length < 92 ? (
+                      p.body
                     ) : (
                       <>
-                        {p.caption.slice(0, 88)}…{' '}
+                        {p.body.slice(0, 88)}…{' '}
                         <button
                           type="button"
                           onClick={() => setExpanded((s) => ({ ...s, [p.id]: true }))}
@@ -218,36 +341,90 @@ export default function CommunityPage() {
                     )}
                   </p>
 
-                  <PhotoField
-                    brief={`${p.place}. ${p.caption.slice(0, 60)}`}
-                    showSlots={false}
-                    plate={p.plate}
-                    className={`w-full ${p.tall ? 'aspect-[4/5]' : 'aspect-square'}`}
-                    variant="mid"
-                  />
+                  {p.plate ? (
+                    <PhotoField
+                      brief={`${p.placeName ?? p.placeSlug ?? p.author.displayName}. ${p.body.slice(0, 60)}`}
+                      showSlots={false}
+                      plate={p.plate}
+                      className="aspect-square w-full"
+                      variant="mid"
+                    />
+                  ) : null}
 
-                  {/* Counts, then actions — the order every feed uses. */}
                   <div className="flex items-center gap-4 px-4 pt-3">
                     <span className="micro figures text-ink-dim">
-                      {p.likes + (isLiked ? 1 : 0)} {tr('community.likes')}
+                      {p.likeCount} {tr('community.likes')}
                     </span>
                     <span className="micro figures text-ink-dim">
-                      {p.comments} {tr('community.replies')}
+                      {p.comments.length} {tr('community.replies')}
                     </span>
                   </div>
 
                   <div className="mt-3 flex items-stretch border-t border-ink-ghost">
                     <Action
-                      onClick={() => setLiked((s) => ({ ...s, [p.id]: !s[p.id] }))}
-                      active={isLiked}
-                      pressed={isLiked}
-                      label={isLiked ? tr('community.liked') : tr('community.like2')}
-                      icon={<Heart filled={isLiked} />}
+                      onClick={() => void onLike(p)}
+                      active={p.likedByMe}
+                      pressed={p.likedByMe}
+                      disabled={Boolean(busy[p.id])}
+                      label={p.likedByMe ? tr('community.liked') : tr('community.like2')}
+                      icon={<Heart filled={p.likedByMe} />}
                     />
-                    <Action label={tr('community.comment')} icon={<CommentIcon />} disabled title={tr('community.comingSoon')} />
-                    <Action label={tr('community.share')} icon={<ShareIcon />} disabled title={tr('community.comingSoon')} />
-                    <Action label={tr('community.save')} icon={<SaveIcon />} disabled title={tr('community.comingSoon')} />
+                    <Action
+                      onClick={() => setOpenComments((s) => ({ ...s, [p.id]: !s[p.id] }))}
+                      pressed={commentsOpen}
+                      label={tr('community.comment')}
+                      icon={<CommentIcon />}
+                    />
+                    <Action
+                      onClick={() => void onShare(p.id)}
+                      label={tr('community.share')}
+                      icon={<ShareIcon />}
+                    />
                   </div>
+
+                  {commentsOpen ? (
+                    <div className="border-t border-ink-ghost px-4 py-4">
+                      <ul className="flex flex-col gap-3">
+                        {p.comments.map((c) => (
+                          <li key={c.id} className="flex gap-3">
+                            <Avatar name={c.author.displayName} />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm text-ink">
+                                <span className="font-semibold">{c.author.displayName}</span>{' '}
+                                <span className="micro text-ink-dim">{relativeTime(c.createdAt)}</span>
+                              </p>
+                              <p className="mt-1 text-sm leading-relaxed text-ink">{c.body}</p>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                      {p.comments.length === 0 ? (
+                        <p className="micro text-ink-dim">{tr('community.noComments')}</p>
+                      ) : null}
+                      <div className="mt-4 flex gap-2">
+                        <label htmlFor={`reply-${p.id}`} className="sr-only">
+                          {tr('community.comment')}
+                        </label>
+                        <input
+                          id={`reply-${p.id}`}
+                          value={reply[p.id] ?? ''}
+                          onChange={(e) => setReply((s) => ({ ...s, [p.id]: e.target.value }))}
+                          placeholder={me ? tr('community.commentPlaceholder') : tr('community.signInToAct')}
+                          disabled={!me || Boolean(busy[`c-${p.id}`])}
+                          maxLength={500}
+                          className="min-w-0 flex-1 border-0 border-b border-ink-ghost bg-transparent py-2 text-sm text-ink outline-none focus:border-accent disabled:opacity-60"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => void onComment(p.id)}
+                          disabled={!me || Boolean(busy[`c-${p.id}`]) || !(reply[p.id] ?? '').trim()}
+                          className="micro shrink-0 text-accent disabled:opacity-40"
+                        >
+                          {tr('community.reply')}
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
                 </article>
               );
             })}
@@ -255,27 +432,15 @@ export default function CommunityPage() {
             <p className="micro py-8 text-center text-ink-dim">{tr('community.end')}</p>
           </div>
 
-          {/* ── Sidebar ───────────────────────────────────────────────── */}
           <aside className="hidden lg:block">
             <div className="sticky top-32 flex flex-col gap-5">
               <div className="rounded-xl border border-ink-ghost bg-ground p-5">
                 <p className="micro mb-4 text-ink-dim">{tr('community.contributors')}</p>
                 <ul className="flex flex-col gap-4">
-                  {AUTHORS.map((a) => (
-                    <li key={a.handle} className="flex items-center gap-3">
-                      <Avatar name={a.name} />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-ink">{a.name}</p>
-                        <p className="micro mt-1 truncate text-ink-dim">{a.bio}</p>
-                      </div>
-                      <button
-                        type="button"
-                        disabled
-                        title={tr('community.comingSoon')}
-                        className="micro shrink-0 rounded-full border border-ink-ghost px-3 py-1.5 text-ink opacity-50"
-                      >
-                        {tr('community.follow')}
-                      </button>
+                  {contributors.map(([id, name]) => (
+                    <li key={id} className="flex items-center gap-3">
+                      <Avatar name={name} />
+                      <p className="truncate text-sm font-medium text-ink">{name}</p>
                     </li>
                   ))}
                 </ul>
@@ -284,17 +449,15 @@ export default function CommunityPage() {
               <div className="rounded-xl border border-ink-ghost bg-ground p-5">
                 <p className="micro mb-4 text-ink-dim">{tr('community.trending')}</p>
                 <ul className="flex flex-col">
-                  {places.slice(0, 5).map((p, i) => (
-                    <li key={p.id} className="border-t border-ink-ghost first:border-t-0">
-                      <a
-                        href={`/explore/${p.id}`}
+                  {trending.map((p) => (
+                    <li key={p.slug} className="border-t border-ink-ghost first:border-t-0">
+                      <Link
+                        href={`/explore/${p.slug}`}
                         className="flex items-baseline justify-between gap-3 py-3 transition-colors hover:text-accent"
                       >
                         <span className="text-sm text-ink">{p.name}</span>
-                        <span className="micro figures shrink-0 text-ink-dim">
-                          {94 - i * 13}
-                        </span>
-                      </a>
+                        <span className="micro figures shrink-0 text-ink-dim">{p.n}</span>
+                      </Link>
                     </li>
                   ))}
                 </ul>
@@ -309,7 +472,6 @@ export default function CommunityPage() {
   );
 }
 
-/** Initials on the accent. No stock avatar photography, no placeholder faces. */
 function Avatar({ name }: { name: string }) {
   const initials = name
     .split(' ')
@@ -335,7 +497,6 @@ function Action({
   active,
   pressed,
   disabled,
-  title,
 }: {
   label: string;
   icon: React.ReactNode;
@@ -343,7 +504,6 @@ function Action({
   active?: boolean;
   pressed?: boolean;
   disabled?: boolean;
-  title?: string;
 }) {
   return (
     <button
@@ -351,7 +511,6 @@ function Action({
       onClick={onClick}
       aria-pressed={pressed}
       disabled={disabled}
-      title={title}
       className="micro flex flex-1 items-center justify-center gap-2 py-3 transition-colors hover:bg-[color:var(--ink-ghost)] disabled:cursor-not-allowed disabled:opacity-50"
       style={{ color: active ? 'var(--accent)' : 'var(--ink-dim)' }}
     >
@@ -361,7 +520,6 @@ function Action({
   );
 }
 
-/* Drawn to the same 1.4px stroke as the rest of the icon set. */
 const S = {
   fill: 'none',
   stroke: 'currentColor',
@@ -382,14 +540,6 @@ function ShareIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
       <path d="M14.5 1.5 7.2 8.8M14.5 1.5l-4.7 13-2.6-5.7-5.7-2.6 13-4.7Z" {...S} />
-    </svg>
-  );
-}
-
-function SaveIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-      <path d="M3.5 1.8h9v12.4L8 11l-4.5 3.2V1.8Z" {...S} />
     </svg>
   );
 }

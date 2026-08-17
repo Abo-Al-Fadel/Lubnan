@@ -1,21 +1,95 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { notFound } from 'next/navigation';
 import { PhotoField } from '@/components/ui/PhotoField';
 import { HeroSubject } from '@/components/ui/HeroSubject';
 import { LebanonMap } from '@/components/ui/LebanonMap';
 import { Navbar, SiteFooter } from '@/components/sections/Chrome';
 import { Reveal } from '@/components/ui/Reveal';
+import { useAuth } from '@/lib/auth';
+import { fetchPlace, useCatalog, type Place } from '@/lib/catalog';
+import { listSaved, pinSaved, unpinSaved } from '@/lib/saved';
 import { useSite } from '@/lib/site-state';
-import { getPlace, places } from '@/data/places';
 import type { Variation } from '@/data/variations';
 
 export default function PlacePage({ params }: { params: { place: string } }) {
-  const { tr } = useSite();
+  const { locale, tr } = useSite();
+  const { me } = useAuth();
+  const { places, getPlace } = useCatalog();
   const [open, setOpen] = useState<number | null>(null);
-  const place = getPlace(params.place);
-  if (!place) notFound();
+  const [place, setPlace] = useState<Place | undefined>(() => getPlace(params.place));
+  const [missing, setMissing] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const cached = getPlace(params.place);
+    if (cached) setPlace(cached);
+  }, [params.place, getPlace]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchPlace(params.place, locale).then((next) => {
+      if (cancelled) return;
+      if (!next) setMissing(true);
+      else setPlace(next);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [params.place, locale]);
+
+  useEffect(() => {
+    if (!me) {
+      setSaved(false);
+      return;
+    }
+    let cancelled = false;
+    void listSaved()
+      .then((rows) => {
+        if (!cancelled) setSaved(rows.some((row) => row.slug === params.place));
+      })
+      .catch(() => {
+        if (!cancelled) setSaved(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [me, params.place]);
+
+  if (missing && !place) notFound();
+  if (!place) {
+    return (
+      <div data-palette="cedar" className="bg-ground">
+        <Navbar />
+        <main id="main" className="px-5 pb-24 pt-32 md:px-10 md:pt-40">
+          <p className="micro text-ink-dim" role="status">
+            {tr('login.pending')}
+          </p>
+        </main>
+      </div>
+    );
+  }
+
+  const onSave = async () => {
+    if (!me) {
+      window.location.href = '/login';
+      return;
+    }
+    if (saving) return;
+    setSaving(true);
+    const next = !saved;
+    setSaved(next);
+    try {
+      if (next) await pinSaved(place.id);
+      else await unpinSaved(place.id);
+    } catch {
+      setSaved(!next);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const nearby = places
     .filter((p) => p.id !== place.id)
@@ -84,9 +158,20 @@ export default function PlacePage({ params }: { params: { place: string } }) {
                 {place.index} · {place.region} ·{' '}
                 <span className="font-arabic normal-case">{place.arabic}</span>
               </p>
-              <p className="max-w-[58ch] text-sm leading-relaxed text-hero-ink md:col-span-9 md:text-base">
-                {place.standfirst}
-              </p>
+              <div className="md:col-span-9">
+                <p className="max-w-[58ch] text-sm leading-relaxed text-hero-ink md:text-base">
+                  {place.standfirst}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void onSave()}
+                  disabled={saving}
+                  aria-pressed={saved}
+                  className="micro mt-5 rounded-full border border-[color:var(--hero-ink-ghost)] px-4 py-2 text-hero-ink transition-colors hover:border-[color:var(--hero-ink)] disabled:opacity-60"
+                >
+                  {saved ? tr('place.saved') : tr('place.save')}
+                </button>
+              </div>
             </div>
           </div>
 

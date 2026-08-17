@@ -6,7 +6,7 @@ import { PhotoField } from '@/components/ui/PhotoField';
 import { LebanonMap } from '@/components/ui/LebanonMap';
 import { Navbar, SiteFooter } from '@/components/sections/Chrome';
 import { useSite } from '@/lib/site-state';
-import { places, REGIONS } from '@/data/places';
+import { REGIONS, useCatalog } from '@/lib/catalog';
 
 /* Regions get their own photograph rather than a colour chip.
    forest-sage-colourway-sheet: each swatch is shot in the environment it
@@ -21,6 +21,7 @@ const REGION_PLATES: Record<string, { plate: string; brief: string }> = {
 
 export default function ExplorePage() {
   const { tr } = useSite();
+  const { places } = useCatalog();
   const [region, setRegionState] = useState<string | null>(null);
   const [hover, setHover] = useState<string | null>(null);
 
@@ -104,7 +105,7 @@ export default function ExplorePage() {
                 {[
                   ['225', tr('explore.statCoast')],
                   ['3,088', tr('explore.statPeak')],
-                  ['8', tr('explore.statPlaces')],
+                  [String(places.length), tr('explore.statPlaces')],
                 ].map(([figure, label]) => (
                   <div key={label}>
                     <dt className="figures font-display text-2xl font-medium leading-none text-hero-ink">

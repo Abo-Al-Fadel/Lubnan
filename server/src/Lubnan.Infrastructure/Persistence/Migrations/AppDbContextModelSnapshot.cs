@@ -24,10 +24,119 @@ namespace Lubnan.Infrastructure.Persistence.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "citext");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Lubnan.Domain.Community.CommunityPost", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AuthorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("author_id");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("body");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamptz")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("PlaceSlug")
+                        .HasMaxLength(80)
+                        .HasColumnType("citext")
+                        .HasColumnName("place_slug");
+
+                    b.Property<string>("Plate")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("plate");
+
+                    b.HasKey("Id")
+                        .HasName("pk_community_posts");
+
+                    b.HasIndex("AuthorId")
+                        .HasDatabaseName("ix_community_posts_author");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_community_posts_created_at");
+
+                    b.HasIndex("PlaceSlug")
+                        .HasDatabaseName("ix_community_posts_place");
+
+                    b.ToTable("community_posts", (string)null);
+                });
+
+            modelBuilder.Entity("Lubnan.Domain.Community.PostComment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AuthorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("author_id");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("body");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamptz")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("PostId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("post_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_community_post_comments");
+
+                    b.HasIndex("AuthorId");
+
+                    b.HasIndex("PostId", "CreatedAt")
+                        .HasDatabaseName("ix_community_post_comments_post_created");
+
+                    b.ToTable("community_post_comments", (string)null);
+                });
+
+            modelBuilder.Entity("Lubnan.Domain.Community.PostLike", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamptz")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("PostId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("post_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_community_post_likes");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("PostId", "UserId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_community_post_likes_post_user");
+
+                    b.ToTable("community_post_likes", (string)null);
+                });
+
             modelBuilder.Entity("Lubnan.Domain.Places.Callout", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -68,7 +177,6 @@ namespace Lubnan.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Lubnan.Domain.Places.Place", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -171,7 +279,6 @@ namespace Lubnan.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Lubnan.Domain.Places.PlaceTranslation", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -236,7 +343,6 @@ namespace Lubnan.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Lubnan.Domain.Places.PracticalFact", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -261,6 +367,39 @@ namespace Lubnan.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_place_facts_place_ordinal");
 
                     b.ToTable("place_facts", (string)null);
+                });
+
+            modelBuilder.Entity("Lubnan.Domain.Saved.SavedPlace", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamptz")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("PlaceSlug")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("citext")
+                        .HasColumnName("place_slug");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_saved_places");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_saved_places_user");
+
+                    b.HasIndex("UserId", "PlaceSlug")
+                        .IsUnique()
+                        .HasDatabaseName("ix_saved_places_user_slug");
+
+                    b.ToTable("saved_places", (string)null);
                 });
 
             modelBuilder.Entity("Lubnan.Domain.Users.AccountEvent", b =>
@@ -315,7 +454,6 @@ namespace Lubnan.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Lubnan.Domain.Users.User", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -413,7 +551,6 @@ namespace Lubnan.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Lubnan.Domain.Users.UserSession", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -487,7 +624,6 @@ namespace Lubnan.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Lubnan.Domain.Users.UserToken", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -579,6 +715,50 @@ namespace Lubnan.Infrastructure.Persistence.Migrations
                     b.ToTable("outbox_messages", (string)null);
                 });
 
+            modelBuilder.Entity("Lubnan.Domain.Community.CommunityPost", b =>
+                {
+                    b.HasOne("Lubnan.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_community_posts_author_id");
+                });
+
+            modelBuilder.Entity("Lubnan.Domain.Community.PostComment", b =>
+                {
+                    b.HasOne("Lubnan.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_community_post_comments_author_id");
+
+                    b.HasOne("Lubnan.Domain.Community.CommunityPost", null)
+                        .WithMany("Comments")
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_community_post_comments_post_id");
+                });
+
+            modelBuilder.Entity("Lubnan.Domain.Community.PostLike", b =>
+                {
+                    b.HasOne("Lubnan.Domain.Community.CommunityPost", null)
+                        .WithMany("Likes")
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_community_post_likes_post_id");
+
+                    b.HasOne("Lubnan.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_community_post_likes_user_id");
+                });
+
             modelBuilder.Entity("Lubnan.Domain.Places.Callout", b =>
                 {
                     b.HasOne("Lubnan.Domain.Places.Place", null)
@@ -609,6 +789,16 @@ namespace Lubnan.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_place_facts_place_id");
                 });
 
+            modelBuilder.Entity("Lubnan.Domain.Saved.SavedPlace", b =>
+                {
+                    b.HasOne("Lubnan.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_saved_places_user_id");
+                });
+
             modelBuilder.Entity("Lubnan.Domain.Users.AccountEvent", b =>
                 {
                     b.HasOne("Lubnan.Domain.Users.User", null)
@@ -637,6 +827,13 @@ namespace Lubnan.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_user_tokens_user_id");
+                });
+
+            modelBuilder.Entity("Lubnan.Domain.Community.CommunityPost", b =>
+                {
+                    b.Navigation("Comments");
+
+                    b.Navigation("Likes");
                 });
 
             modelBuilder.Entity("Lubnan.Domain.Places.Place", b =>

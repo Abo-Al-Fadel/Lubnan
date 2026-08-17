@@ -22,7 +22,9 @@ internal sealed class Handler(IAppDbContext db)
 
         // Safe by the time the handler runs: the validator has already refused
         // anything these would not parse.
-        Region? region = query.Region is null ? null : Enum.Parse<Region>(query.Region, ignoreCase: true);
+        Region? region = query.Region is null || !RegionNames.TryParse(query.Region, out var parsedRegion)
+            ? null
+            : parsedRegion;
         PlaceCategory? category = query.Category is null
             ? null
             : Enum.Parse<PlaceCategory>(query.Category, ignoreCase: true);

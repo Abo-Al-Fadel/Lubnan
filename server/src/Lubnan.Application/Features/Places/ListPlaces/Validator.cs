@@ -20,7 +20,7 @@ internal sealed class Validator : AbstractValidator<Query>
     }
 
     private static bool BeAKnownRegion(string? value) =>
-        value is null || Enum.TryParse<Region>(value, ignoreCase: true, out _);
+        value is null || RegionNames.TryParse(value, out _);
 
     private static bool BeAKnownCategory(string? value) =>
         value is null || Enum.TryParse<PlaceCategory>(value, ignoreCase: true, out _);

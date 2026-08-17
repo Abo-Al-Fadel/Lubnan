@@ -1,22 +1,25 @@
 /**
- * Beirut–Rafic Hariri (BEY) schedule.
+ * Fallback BEY schedule.
  *
- * Representative of the real route network out of Beirut — the carriers, the
- * destinations and the rough timings are the ones that actually operate — but
- * these are illustrative times, not a live feed. The board says so on its face
- * rather than implying a data source that does not exist, and the shape here
- * is the shape a real integration returns, so swapping in an API later changes
- * the source and nothing about the component.
+ * Used only when the airport site cannot be reached. The live board is
+ * `/api/v1/flights`. The shape here matches that response so the UI does
+ * not care which source filled it.
  */
 
-export type FlightStatus = 'on-time' | 'boarding' | 'delayed' | 'landed' | 'departed';
+export type FlightStatus =
+  | 'on-time'
+  | 'boarding'
+  | 'delayed'
+  | 'landed'
+  | 'departed'
+  | 'cancelled';
 
 export type Flight = {
   /** IATA flight number. */
   code: string;
   airline: string;
-  /** IATA code of the other end. */
-  iata: string;
+  /** IATA code of the other end, when we know it. */
+  iata?: string;
   city: string;
   country: string;
   /** Scheduled local time, 24h. */

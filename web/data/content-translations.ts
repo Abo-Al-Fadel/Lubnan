@@ -41,15 +41,6 @@ export const content: Record<Locale, Dict> = {
     'secret.05.title': 'More Lebanese live outside the country than inside it',
     'secret.05.body':
       'The diaspora reaches Brazil, West Africa, Australia and the Gulf, and it has been leaving in waves since the 1860s. Figure to confirm before publication.',
-
-    'post.p1.caption':
-      'Took the long path down from Bsharri. Three hours, one monastery cut into the cliff, and a man who insisted I take his thermos.',
-    'post.p2.caption':
-      'The lemonade stand everyone tells you about is real and it is worth the queue.',
-    'post.p3.caption':
-      'Hippodrome at seven in the morning, completely empty. Two thousand years of chariot racing and one stray cat.',
-    'post.p4.caption':
-      'Sunset from the Corniche. Half the city is out walking and someone is always selling corn.',
   },
 
   fr: {
@@ -83,15 +74,6 @@ export const content: Record<Locale, Dict> = {
     'secret.05.title': 'Plus de Libanais vivent hors du pays qu’à l’intérieur',
     'secret.05.body':
       'La diaspora atteint le Brésil, l’Afrique de l’Ouest, l’Australie et le Golfe, et part par vagues depuis les années 1860. Chiffre à confirmer avant publication.',
-
-    'post.p1.caption':
-      'J’ai pris le long sentier depuis Bcharré. Trois heures, un monastère taillé dans la falaise, et un homme qui a insisté pour me donner son thermos.',
-    'post.p2.caption':
-      'Le stand de limonade dont tout le monde parle existe vraiment, et la queue en vaut la peine.',
-    'post.p3.caption':
-      'L’hippodrome à sept heures du matin, complètement vide. Deux mille ans de courses de chars et un chat errant.',
-    'post.p4.caption':
-      'Coucher de soleil sur la Corniche. La moitié de la ville se promène et quelqu’un vend toujours du maïs.',
   },
 
   ar: {
@@ -125,13 +107,5 @@ export const content: Record<Locale, Dict> = {
     'secret.05.title': 'عدد اللبنانيين خارج البلاد أكبر من عددهم فيها',
     'secret.05.body':
       'يمتدّ الانتشار إلى البرازيل وغرب أفريقيا وأستراليا والخليج، وبدأ بموجات منذ ستينيات القرن التاسع عشر. الرقم بانتظار التأكيد.',
-
-    'post.p1.caption':
-      'سلكت الدرب الطويل نزولاً من بشرّي. ثلاث ساعات، ودير محفور في الصخر، ورجل أصرّ أن آخذ ترمسه.',
-    'post.p2.caption': 'كشك الليموناضة الذي يخبرك عنه الجميع موجود فعلاً، ويستحق الانتظار.',
-    'post.p3.caption':
-      'الهيبودروم عند السابعة صباحاً، فارغ تماماً. ألفا عام من سباق العربات وقطّ شارد واحد.',
-    'post.p4.caption':
-      'الغروب من الكورنيش. نصف المدينة يتمشّى، وهناك دائماً من يبيع الذرة.',
   },
 };

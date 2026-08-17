@@ -114,5 +114,6 @@ and horizontal overflow. Its first run found 239 problems.
   rather than a banner. Plates `T1`–`T6` exist for banners if wanted.
 - Plates are full-resolution PNGs, ~233MB total. They should be converted to
   WebP at display size before this is deployed anywhere real.
-- `data/flights.ts` is a representative schedule, not a live feed, and the
-  board says so on its face.
+- `/plan` loads today's BEY board from `/api/v1/flights` (the airport's public
+  page, cached a few minutes). If that feed is down, `data/flights.ts` is the
+  fallback and the board says so.

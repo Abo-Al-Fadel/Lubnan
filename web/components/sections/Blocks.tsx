@@ -1,14 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PhotoField } from '@/components/ui/PhotoField';
 import { Crosshair, Heart } from '@/components/ui/Subjects';
 import { Reveal } from '@/components/ui/Reveal';
 import { Counter } from '@/components/ui/Counter';
+import { useAuth } from '@/lib/auth';
+import { useCatalog } from '@/lib/catalog';
+import { listPosts, toggleLike, type CommunityPost } from '@/lib/community';
+import { ApiError } from '@/lib/api';
 import { useSite } from '@/lib/site-state';
-import destinations from '@/data/destinations.json';
 import secrets from '@/data/secrets.json';
-import posts from '@/data/posts.json';
 
 type Slots = { showSlots: boolean };
 
@@ -134,22 +136,25 @@ export function Lede({
    ────────────────────────────────────────────────────────────────────── */
 export function DestinationRail({ showSlots }: Slots) {
   const { tr } = useSite();
+  const { places } = useCatalog();
   return (
     <section className="bg-band py-20 md:py-28">
       <div className="mb-10 flex items-end justify-between px-5 md:mb-12 md:px-10">
         <Reveal as="p" mode="words" className="max-w-[18ch] font-display text-[clamp(1.5rem,3vw,2.5rem)] font-medium uppercase leading-[1.06] text-ink">
           {tr('rail.title')}
         </Reveal>
-        <p className="micro figures shrink-0 text-ink-dim">01. 08</p>
+        <p className="micro figures shrink-0 text-ink-dim">
+          01. {String(places.length).padStart(2, '0')}
+        </p>
       </div>
 
       <div className="rail flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 md:gap-6 md:px-10">
-        {destinations.map((d) => (
-          <article
+        {places.map((d) => (
+          <a
             key={d.id}
+            href={`/explore/${d.id}`}
             className="group w-[78vw] shrink-0 snap-start sm:w-[52vw] md:w-[34vw] lg:w-[26vw]"
           >
-            {/* IMAGE: see brief below — one per destination, replaced 1:1 later */}
             <PhotoField
               brief={`${d.name}, ${d.region}. Establishing shot that reads at card size, natural light, no people in frame`}
               showSlots={showSlots}
@@ -169,7 +174,7 @@ export function DestinationRail({ showSlots }: Slots) {
             <p className="mt-3 max-w-[38ch] text-[0.82rem] leading-relaxed text-ink-dim">
               {d.note}
             </p>
-          </article>
+          </a>
         ))}
       </div>
     </section>
@@ -183,7 +188,8 @@ export function DestinationRail({ showSlots }: Slots) {
    ────────────────────────────────────────────────────────────────────── */
 export function DestinationMosaic({ showSlots }: Slots) {
   const { tr, tc } = useSite();
-  const picks = destinations.slice(0, 5);
+  const { places } = useCatalog();
+  const picks = places.slice(0, 5);
   /* Fixed auto-row height: with only absolutely positioned children the tiles
      have no intrinsic height, so a content-sized row collapses them.
      Two bands of 12 — 7+5, then 5+4+3. Every tile spans two rows, which is
@@ -215,7 +221,7 @@ export function DestinationMosaic({ showSlots }: Slots) {
 
       <div className="grid grid-cols-1 gap-3 md:auto-rows-[12rem] md:grid-cols-12 md:gap-4">
         {picks.map((d, i) => (
-          <article key={d.id} className={`group relative ${spans[i]}`}>
+          <a key={d.id} href={`/explore/${d.id}`} className={`group relative ${spans[i]}`}>
             <PhotoField
               brief={`${d.name}, ${d.region}. ${i === 0 ? 'wide establishing shot with room for an overlaid caption' : 'mid shot, single clear subject'}, natural light`}
               showSlots={showSlots}
@@ -232,7 +238,7 @@ export function DestinationMosaic({ showSlots }: Slots) {
                 {d.index} · {tc(`region.${d.region}`, d.region)}
               </p>
             </div>
-          </article>
+          </a>
         ))}
       </div>
     </section>
@@ -411,12 +417,66 @@ export function SecretsList({ showSlots }: Slots) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   CommunityStrip — post previews with working like state.
-   Local state only; the like toggles with no backend, per the brief.
+   CommunityStrip — the live feed, four cards.
    ────────────────────────────────────────────────────────────────────── */
 export function CommunityStrip({ showSlots }: Slots) {
-  const { tr, tc } = useSite();
-  const [liked, setLiked] = useState<Record<string, boolean>>({});
+  const { tr } = useSite();
+  const { me } = useAuth();
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
+  const [ready, setReady] = useState(false);
+  const [busy, setBusy] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    void listPosts()
+      .then((rows) => {
+        if (!cancelled) setPosts(rows.slice(0, 4));
+      })
+      .catch(() => {
+        if (!cancelled) setPosts([]);
+      })
+      .finally(() => {
+        if (!cancelled) setReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [me]);
+
+  const onLike = async (post: CommunityPost) => {
+    if (!me) {
+      window.location.href = '/login';
+      return;
+    }
+    if (busy[post.id]) return;
+    setBusy((s) => ({ ...s, [post.id]: true }));
+    setPosts((list) =>
+      list.map((p) =>
+        p.id === post.id
+          ? {
+              ...p,
+              likedByMe: !p.likedByMe,
+              likeCount: p.likeCount + (p.likedByMe ? -1 : 1),
+            }
+          : p,
+      ),
+    );
+    try {
+      const state = await toggleLike(post.id);
+      setPosts((list) =>
+        list.map((p) =>
+          p.id === post.id ? { ...p, likedByMe: state.liked, likeCount: state.likeCount } : p,
+        ),
+      );
+    } catch (err) {
+      setPosts((list) => list.map((p) => (p.id === post.id ? post : p)));
+      if (err instanceof ApiError && err.status === 401) {
+        window.location.href = '/login';
+      }
+    } finally {
+      setBusy((s) => ({ ...s, [post.id]: false }));
+    }
+  };
 
   return (
     <section className="bg-band px-5 py-20 md:px-10 md:py-28">
@@ -432,43 +492,48 @@ export function CommunityStrip({ showSlots }: Slots) {
         </a>
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {posts.map((p) => {
-          const isLiked = Boolean(liked[p.id]);
-          return (
+      {ready && posts.length === 0 ? (
+        <p className="max-w-[46ch] text-sm text-ink-dim">{tr('community.errorLoad')}</p>
+      ) : (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {posts.map((p) => (
             <article key={p.id} className="group flex flex-col">
-              <PhotoField
-                brief={p.imageBrief}
-                showSlots={showSlots}
-                plate={p.plate}
-                className="aspect-square w-full [&>img]:transition-transform [&>img]:duration-[900ms] [&>img]:ease-out group-hover:[&>img]:scale-[1.05]"
-                variant="mid"
-              />
+              <a href={`/community#${p.id}`}>
+                <PhotoField
+                  brief={p.body}
+                  showSlots={showSlots}
+                  plate={p.plate ?? undefined}
+                  className="aspect-square w-full [&>img]:transition-transform [&>img]:duration-[900ms] [&>img]:ease-out group-hover:[&>img]:scale-[1.05]"
+                  variant="mid"
+                />
+              </a>
               <div className="mt-4 flex items-baseline justify-between gap-2">
-                <p className="text-sm font-medium text-ink">{p.author}</p>
-                <p className="micro shrink-0 text-ink-dim">{p.place}</p>
+                <p className="text-sm font-medium text-ink">{p.author.displayName}</p>
+                <p className="micro shrink-0 text-ink-dim">{p.placeName ?? p.region ?? ''}</p>
               </div>
               <p className="mt-2.5 max-w-[40ch] flex-1 text-[0.82rem] leading-relaxed text-ink-dim">
-                {tc(`post.${p.id}.caption`, p.caption)}
+                {p.body}
               </p>
               <div className="mt-4 flex items-center gap-5 border-t border-ink-ghost pt-3.5">
                 <button
                   type="button"
-                  onClick={() => setLiked((s) => ({ ...s, [p.id]: !s[p.id] }))}
-                  aria-pressed={isLiked}
+                  onClick={() => void onLike(p)}
+                  aria-pressed={p.likedByMe}
                   className="micro figures tap flex min-h-[32px] items-center gap-2 transition-opacity duration-200 ease-out hover:opacity-70"
-                  style={{ color: isLiked ? 'var(--accent)' : 'var(--ink-dim)' }}
+                  style={{ color: p.likedByMe ? 'var(--accent)' : 'var(--ink-dim)' }}
                 >
-                  <Heart filled={isLiked} />
-                  {p.likes + (isLiked ? 1 : 0)}
-                  <span className="sr-only">{isLiked ? tr('community.unlike') : tr('community.like')}</span>
+                  <Heart filled={p.likedByMe} />
+                  {p.likeCount}
+                  <span className="sr-only">{p.likedByMe ? tr('community.unlike') : tr('community.like')}</span>
                 </button>
-                <span className="micro figures text-ink-dim">{p.comments} {tr('community.replies')}</span>
+                <span className="micro figures text-ink-dim">
+                  {p.comments.length} {tr('community.replies')}
+                </span>
               </div>
             </article>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

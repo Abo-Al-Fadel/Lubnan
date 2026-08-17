@@ -7,7 +7,9 @@ import { LebanonMap } from '@/components/ui/LebanonMap';
 import { Counter } from '@/components/ui/Counter';
 import { useSite } from '@/lib/site-state';
 import { useAuth } from '@/lib/auth';
-import { places } from '@/data/places';
+import { useCatalog } from '@/lib/catalog';
+import { listPosts, relativeTime, type CommunityPost } from '@/lib/community';
+import { listSaved, unpinSaved } from '@/lib/saved';
 
 /**
  * Saved places, in Raouche.
@@ -21,26 +23,44 @@ import { places } from '@/data/places';
 export default function ProfilePage() {
   const { tr } = useSite();
   const { me, ready } = useAuth();
+  const { places } = useCatalog();
   const [saved, setSaved] = useState<string[]>([]);
+  const [mine, setMine] = useState<CommunityPost[]>([]);
   const [tab, setTab] = useState<'places' | 'trips' | 'posts'>('places');
 
   useEffect(() => {
     if (!me) {
       setSaved([]);
+      setMine([]);
       return;
     }
-    try {
-      const raw = localStorage.getItem(`lubnan.saved.${me.id}`);
-      const parsed = raw ? (JSON.parse(raw) as unknown) : [];
-      setSaved(Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : []);
-    } catch {
-      setSaved([]);
-    }
+    let cancelled = false;
+    void listSaved()
+      .then((rows) => {
+        if (!cancelled) setSaved(rows.map((row) => row.slug));
+      })
+      .catch(() => {
+        if (!cancelled) setSaved([]);
+      });
+    void listPosts()
+      .then((posts) => {
+        if (!cancelled) setMine(posts.filter((post) => post.author.id === me.id));
+      })
+      .catch(() => {
+        if (!cancelled) setMine([]);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [me]);
 
-  const persist = (next: string[]) => {
-    setSaved(next);
-    if (me) localStorage.setItem(`lubnan.saved.${me.id}`, JSON.stringify(next));
+  const remove = async (slug: string) => {
+    setSaved((cur) => cur.filter((id) => id !== slug));
+    try {
+      await unpinSaved(slug);
+    } catch {
+      setSaved((cur) => (cur.includes(slug) ? cur : [...cur, slug]));
+    }
   };
 
   const savedPlaces = places.filter((p) => saved.includes(p.id));
@@ -48,7 +68,7 @@ export default function ProfilePage() {
   const TABS: [typeof tab, string, number][] = [
     ['places', tr('profile.tabPlaces'), savedPlaces.length],
     ['trips', tr('profile.tabTrips'), 0],
-    ['posts', tr('profile.tabPosts'), 0],
+    ['posts', tr('profile.tabPosts'), mine.length],
   ];
 
   return (
@@ -93,24 +113,21 @@ export default function ProfilePage() {
                 {[
                   [String(savedPlaces.length), tr('profile.statSaved')],
                   ['0', tr('profile.statTrips')],
-                  ['0', tr('profile.statPosts')],
-                  [String(me.activeSessions), tr('profile.sessions')],
-                ]
-                  .slice(0, 3)
-                  .map(([figure, label]) => (
-                    <div key={label}>
-                      <dt className="sr-only">{label}</dt>
-                      <dd>
-                        <Counter
-                          value={figure}
-                          className="figures block font-display text-[clamp(1.75rem,3.4vw,2.5rem)] font-medium leading-none text-ink"
-                        />
-                        <span className="micro mt-3 block max-w-[14ch] leading-[1.7] text-ink-dim">
-                          {label}
-                        </span>
-                      </dd>
-                    </div>
-                  ))}
+                  [String(mine.length), tr('profile.statPosts')],
+                ].map(([figure, label]) => (
+                  <div key={label}>
+                    <dt className="sr-only">{label}</dt>
+                    <dd>
+                      <Counter
+                        value={figure}
+                        className="figures block font-display text-[clamp(1.75rem,3.4vw,2.5rem)] font-medium leading-none text-ink"
+                      />
+                      <span className="micro mt-3 block max-w-[14ch] leading-[1.7] text-ink-dim">
+                        {label}
+                      </span>
+                    </dd>
+                  </div>
+                ))}
               </dl>
             </header>
 
@@ -154,7 +171,7 @@ export default function ProfilePage() {
                         </a>
                         <button
                           type="button"
-                          onClick={() => persist(saved.filter((x) => x !== p.id))}
+                          onClick={() => void remove(p.id)}
                           className="micro absolute right-2 top-2 rounded-full bg-black/55 px-3 py-1.5 text-[color:var(--hero-ink)] opacity-100 backdrop-blur-sm transition-opacity duration-200 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
                         >
                           {tr('profile.remove')}
@@ -201,7 +218,27 @@ export default function ProfilePage() {
             ) : null}
 
             {tab === 'posts' ? (
-              <p className="mt-12 max-w-[46ch] text-sm text-ink-dim">{tr('profile.emptyPosts')}</p>
+              mine.length === 0 ? (
+                <p className="mt-12 max-w-[46ch] text-sm text-ink-dim">
+                  {tr('profile.emptyPosts')}{' '}
+                  <a href="/community" className="tap border-b border-ink pb-0.5 text-ink">
+                    {tr('nav.community')}
+                  </a>
+                </p>
+              ) : (
+                <ul className="mt-12 max-w-xl">
+                  {mine.map((post) => (
+                    <li key={post.id} className="border-t border-ink-ghost py-5 last:border-b">
+                      <a href={`/community#${post.id}`} className="block">
+                        <p className="text-sm leading-relaxed text-ink">{post.body}</p>
+                        <p className="micro mt-2 text-ink-dim">
+                          {post.placeName ?? tr('community.anyPlace')} · {relativeTime(post.createdAt)}
+                        </p>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )
             ) : null}
           </>
         )}

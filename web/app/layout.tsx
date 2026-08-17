@@ -3,6 +3,7 @@ import { Archivo, Oswald, Fraunces, Jost, Noto_Sans_Arabic } from 'next/font/goo
 import './globals.css';
 import { SiteProvider } from '@/lib/site-state';
 import { AuthProvider } from '@/lib/auth';
+import { CatalogProvider } from '@/lib/catalog';
 import { SkipLink } from '@/components/SkipLink';
 import { TitleSync } from '@/components/TitleSync';
 import { ViewportHeight } from '@/components/ViewportHeight';
@@ -69,10 +70,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <SiteProvider>
           <AuthProvider>
-            <ViewportHeight />
-            <SkipLink />
-            <TitleSync />
-            {children}
+            <CatalogProvider>
+              <ViewportHeight />
+              <SkipLink />
+              <TitleSync />
+              {children}
+            </CatalogProvider>
           </AuthProvider>
         </SiteProvider>
       </body>

@@ -1,6 +1,8 @@
 using System.Reflection;
 using Lubnan.Application.Abstractions;
+using Lubnan.Domain.Community;
 using Lubnan.Domain.Places;
+using Lubnan.Domain.Saved;
 using Lubnan.Domain.Users;
 using Lubnan.Infrastructure.Persistence.Outbox;
 using Microsoft.EntityFrameworkCore;
@@ -22,6 +24,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<PlaceTranslation> PlaceTranslations => Set<PlaceTranslation>();
 
     public DbSet<User> Users => Set<User>();
+
+    public DbSet<CommunityPost> CommunityPosts => Set<CommunityPost>();
+
+    public DbSet<SavedPlace> SavedPlaces => Set<SavedPlace>();
 
     internal DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
