@@ -42,11 +42,31 @@ internal sealed class OutboxProcessor(
             return;
         }
 
+        // Backs off when there is nothing to do, and this is not a
+        // micro-optimisation.
+        //
+        // A fixed two-second poll is ~43,000 queries a day whether or not a
+        // single message was ever written. Against a serverless database that
+        // is the difference between a free tier and a dead one: Neon suspends
+        // its compute after about five minutes idle and bills the waking hours,
+        // so a poll that never stops means it never sleeps, and a month needs
+        // 720 compute-hours against an allowance of 191. The database stops
+        // answering roughly eight days in, which looks like an outage rather
+        // than like a poll loop.
+        //
+        // So: poll fast while there is work, and slow down when there is not.
+        // A registration still sends its mail within PollInterval, because
+        // writing a message is preceded by a request, and the first empty drain
+        // after that resets the delay.
+        var idleDelay = _options.PollInterval;
+
         while (!stoppingToken.IsCancellationRequested)
         {
+            var drained = 0;
+
             try
             {
-                await DrainOnce(stoppingToken).ConfigureAwait(false);
+                drained = await DrainOnce(stoppingToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -57,9 +77,13 @@ internal sealed class OutboxProcessor(
                 logger.DrainFailed(exception);
             }
 
+            idleDelay = drained > 0
+                ? _options.PollInterval
+                : Slower(idleDelay, _options.MaxPollInterval);
+
             try
             {
-                await Task.Delay(_options.PollInterval, stoppingToken).ConfigureAwait(false);
+                await Task.Delay(idleDelay, stoppingToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -68,7 +92,15 @@ internal sealed class OutboxProcessor(
         }
     }
 
-    private async Task DrainOnce(CancellationToken cancellationToken)
+    /// <summary>Doubling, capped. Reaches the ceiling in a handful of empty passes.</summary>
+    private static TimeSpan Slower(TimeSpan current, TimeSpan ceiling)
+    {
+        var next = current * 2;
+        return next > ceiling ? ceiling : next;
+    }
+
+    /// <returns>How many messages were dispatched, so the caller can pace itself.</returns>
+    private async Task<int> DrainOnce(CancellationToken cancellationToken)
     {
         using var scope = scopes.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -113,6 +145,8 @@ internal sealed class OutboxProcessor(
         {
             await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }
+
+        return pending.Count;
     }
 
     private static readonly HashSet<string> Silent = new(StringComparer.Ordinal)
