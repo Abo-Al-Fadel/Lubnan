@@ -62,10 +62,29 @@ Neither of these ever goes in a file. They are pasted into dashboards.
    It has `-pooler` in the host. Take that one: the direct string opens a real
    backend per connection, and Render's container will exhaust the free tier's
    limit under any concurrency.
-4. Append `;SSL Mode=Require;Trust Server Certificate=true` if it is not already
-   in the string.
 
 Keep it. This is `ConnectionStrings__Database`.
+
+### The format does not matter
+
+Neon prints a URI:
+
+```
+postgresql://lubnan_owner:npg_xxx@ep-xxx-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require
+```
+
+Npgsql natively wants ADO.NET keywords (`Host=…;Database=…;Username=…`) and
+**does not parse the URI** — pasting it raw used to fail with *"Format of the
+initialization string does not conform to specification starting at index 0"*,
+a message that names neither the setting nor the fix.
+
+The app now converts it for you, at startup and in `dotnet ef`. **Paste
+whatever Neon gives you.** Percent-encoded passwords (`p%40ss` for `p@ss`) are
+decoded too, which otherwise fails as "wrong password" rather than as
+"mangled password".
+
+If you prefer the explicit form, Neon's connection panel has a **.NET** option
+in its dropdown that prints the keyword format directly. Either works.
 
 **Free tier reality:** 0.5 GB, and the compute autosuspends after ~5 minutes
 idle then resumes in about a second. That auto-resume is why this is Neon and
@@ -77,9 +96,22 @@ dead site.
 
 ## 2. Render — the API
 
+> **`render.yaml` lives on `main`, and Render builds `main` by default.**
+> If Render checks out a commit from before it existed, it never sees the
+> blueprint, falls back to looking for a `Dockerfile` at the repository root,
+> and fails with `failed to read dockerfile: open Dockerfile: no such file or
+> directory`. The Dockerfile is at `server/Dockerfile`; only the blueprint
+> knows that. Make sure `main` is current before you point Render at it.
+
 1. <https://render.com> → sign up with GitHub → authorise the `Lubnan` repo.
 2. **New → Blueprint** → pick the repo. It reads `server/render.yaml` and will
    prompt for every value marked `sync: false`.
+
+   *Blueprint, not "Web Service".* A plain web service ignores `render.yaml`
+   entirely, so `rootDir: server` never applies and you get the same missing-
+   Dockerfile error. If you already created one, either delete it and start
+   from Blueprint, or set **Root Directory** to `server` and **Dockerfile
+   Path** to `./Dockerfile` by hand.
 3. Fill them in:
 
    | Key | Value |
@@ -135,8 +167,13 @@ Without this, nobody can confirm an address or reset a password.
 
 1. <https://resend.com> → sign up. Free tier: 3,000 messages/month, **no card,
    no expiry**.
-2. **API Keys → Create.** Copy it once; it is never shown again. This is
-   `Mail__ApiKey`.
+2. **API Keys → Create.** Permission: **Sending access**, not Full access.
+   The application only ever posts a message; full access additionally allows
+   managing domains and minting more API keys, so a leaked key would let
+   somebody redirect your mail rather than merely send some. Domain is
+   *All domains*.
+
+   Copy it once; it is never shown again. This is `Mail__ApiKey`.
 3. To start, leave `Mail__From` as `onboarding@resend.dev` — Resend's shared
    sender, which works immediately and only delivers to *your own* signup
    address.

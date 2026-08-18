@@ -26,7 +26,13 @@ internal sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbCon
 
     public AppDbContext CreateDbContext(string[] args)
     {
-        var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__Database") ?? Fallback;
+        // Normalised, because this is the path `dotnet ef database update` takes
+        // and the string in that environment variable is usually the URI a
+        // managed provider printed. Migrating against Neon is the first thing
+        // anybody does with a real connection string, so it is the first place
+        // the format mismatch would bite.
+        var connectionString = ConnectionString.Normalise(
+            Environment.GetEnvironmentVariable("ConnectionStrings__Database") ?? Fallback);
 
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseNpgsql(connectionString, npgsql => npgsql.MigrationsHistoryTable("__migrations"))

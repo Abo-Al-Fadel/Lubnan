@@ -4,6 +4,7 @@ using Lubnan.Api.Middleware;
 using Lubnan.Application;
 using Lubnan.Application.Abstractions.Http;
 using Lubnan.Infrastructure;
+using Lubnan.Infrastructure.Persistence;
 using Lubnan.Infrastructure.Persistence.Outbox;
 using Lubnan.Infrastructure.Persistence.Seed;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -18,9 +19,15 @@ using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("Database")
+var configuredConnection = builder.Configuration.GetConnectionString("Database")
     ?? throw new InvalidOperationException(
         "ConnectionStrings:Database is not configured. Set it in user secrets, or as ConnectionStrings__Database.");
+
+// Neon, Supabase, Render and Railway all print a postgresql:// URI; Npgsql
+// wants ADO.NET keywords. Accepting both means the string a dashboard gave you
+// works as pasted, instead of failing at the first query with a message that
+// names neither the setting nor the fix.
+var connectionString = ConnectionString.Normalise(configuredConnection);
 
 builder.Services
     .AddApplication()
