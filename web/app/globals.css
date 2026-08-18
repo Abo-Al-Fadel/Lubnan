@@ -205,6 +205,54 @@
     --status-warn: #e0a05a;
   }
 
+  /* Gentle's dark counterpart.
+     Overrides more than Cedar's does, and has to. Cedar is a light palette
+     with a dark scrim, so its dark treatment only moves the page tokens.
+     Gentle inverts that relationship on purpose — a *light* scrim that
+     bleaches a plate toward the pale ground, with dark hero type on top — and
+     on a dark page that is precisely backwards: it would bleach a plate to
+     near-white in the middle of a dark screen and then write dark type on it.
+
+     So the scrim and the hero ink swap sides here, which restores the ordinary
+     dark-scrim-and-light-type arrangement, and Gentle stops being visually
+     distinct from Cedar in dark mode. That is the honest trade: the two
+     palettes differ by hue in the dark rather than by construction, because
+     the construction that distinguishes them only works on a light page.
+
+     Kept green-neutral against Cedar's blue-neutral so the reading pages still
+     read as their own place. */
+  [data-theme='dark'] [data-palette='gentle'] {
+    --ground: #1c2220;
+    --band: #151a19;
+    --ink: #e6ebe6;
+    --ink-dim: rgba(230, 235, 230, 0.62);
+    --ink-ghost: rgba(230, 235, 230, 0.18);
+
+    /* Was #3e4f49, a dark shape on a pale ground. Inverted, or a cut-out
+       silhouette disappears into the page. */
+    --subject: #b9c6c0;
+
+    /* The inversion described above. */
+    --scrim: rgba(18, 23, 21, 0.62);
+    --scrim-strong: rgba(14, 18, 17, 0.86);
+    --hero-ink: #eef1ee;
+    --hero-ink-dim: rgba(238, 241, 238, 0.66);
+    --hero-ink-ghost: rgba(238, 241, 238, 0.2);
+
+    /* Both accents lift off their light-mode values: #b8763a and #2e5a66 are
+       chosen to carry against an eggshell ground and go muddy against a dark
+       one. */
+    --accent: #d8934f;
+    --accent-ink: #151a19;
+    --nav-accent: #7fb0be;
+    --nav-accent-ink: #12171a;
+    --status-warn: #e0a05a;
+
+    /* A solid button is page-ink on page-ground; both just moved. */
+    --btn-solid: #e6ebe6;
+    --btn-solid-ink: #1c2220;
+  }
+
   [data-theme='light'] [data-palette='raouche'] {
     --ground: #eaf1f2;
     --band: #f6fafa;
