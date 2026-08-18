@@ -112,10 +112,29 @@ async function proxy(req: Request, path: string[]) {
     );
   }
 
+  /*
+   * Content-Encoding must not survive the hop, and this one is subtle enough
+   * to be worth the paragraph.
+   *
+   * Render compresses with Brotli. Node's fetch transparently *decompresses*
+   * what it receives, so `upstream.body` here is plain JSON — but
+   * `upstream.headers` still says `content-encoding: br`. Copy that across and
+   * the browser is handed uncompressed bytes labelled compressed: it tries to
+   * Brotli-decode plain text, fails, and renders nothing.
+   *
+   * The failure is nastier than a 500 because every visible signal says
+   * success — 200, `application/json`, no error anywhere — and only the body
+   * is empty. `content-length` is dropped for the same reason: it describes
+   * the compressed size, which no longer matches anything.
+   *
+   * Vercel re-compresses on the way out, so nothing is lost by stripping it.
+   */
+  const DECODED_BY_FETCH = new Set(['content-encoding', 'content-length']);
+
   const out = new Headers();
   upstream.headers.forEach((value, key) => {
     const lower = key.toLowerCase();
-    if (HOP.has(lower) || lower === 'set-cookie') return;
+    if (HOP.has(lower) || DECODED_BY_FETCH.has(lower) || lower === 'set-cookie') return;
     out.append(key, value);
   });
 
