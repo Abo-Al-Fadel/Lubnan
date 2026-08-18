@@ -12,6 +12,11 @@
 #   - 512 MB RAM, shared CPU.
 #   - No shell, no persistent disk. Both are fine here: state lives in Neon.
 #
+# This file is at the repository root because that is the only place Render
+# looks by default. Under server/ it produced "Blueprint file render.yaml not
+# found on main branch", which reads like the file is missing rather than like
+# it is one directory away.
+#
 # Deploy:  Render dashboard → New → Blueprint → point at this repository.
 
 services:
@@ -20,8 +25,22 @@ services:
     runtime: docker
     plan: free
     region: frankfurt          # nearest free region to Lebanon
+    # All three resolve from the REPOSITORY ROOT, not from each other, and that
+    # is the part that catches people.
+    #
+    # dockerfilePath: ./Dockerfile with rootDir: server looks for a Dockerfile
+    # at the repo root and fails with "no such file or directory" — naming a
+    # file that does exist, one directory down. Spell both out from the root and
+    # there is nothing to get wrong.
+    #
+    # dockerContext matters as much as the path: the build copies
+    # Directory.Build.props, Directory.Packages.props and .editorconfig, all of
+    # which live in server/, so a context of the repo root would send the whole
+    # 240 MB of web/public over the wire and still not find them where the
+    # Dockerfile expects.
     rootDir: server
-    dockerfilePath: ./Dockerfile
+    dockerfilePath: ./server/Dockerfile
+    dockerContext: ./server
 
     # Render probes this to decide whether a deploy succeeded. It must be the
     # liveness endpoint, not readiness: /health/ready reports the database, and

@@ -96,22 +96,28 @@ dead site.
 
 ## 2. Render — the API
 
-> **`render.yaml` lives on `main`, and Render builds `main` by default.**
-> If Render checks out a commit from before it existed, it never sees the
-> blueprint, falls back to looking for a `Dockerfile` at the repository root,
-> and fails with `failed to read dockerfile: open Dockerfile: no such file or
-> directory`. The Dockerfile is at `server/Dockerfile`; only the blueprint
-> knows that. Make sure `main` is current before you point Render at it.
+> **Two things have to be true before this works, and both fail confusingly.**
+>
+> `render.yaml` must be on the branch Render is building — `main` — or you get
+> `failed to read dockerfile: open Dockerfile: no such file or directory`,
+> which blames a missing Dockerfile when the real problem is a stale checkout.
+>
+> And it must be at the **repository root**. Render only looks there by
+> default; under `server/` it reports *"Blueprint file render.yaml not found on
+> main branch"*, which reads like the file does not exist rather than like it is
+> one directory away. It now sits at the root, so leave **Blueprint Path**
+> empty.
 
 1. <https://render.com> → sign up with GitHub → authorise the `Lubnan` repo.
 2. **New → Blueprint** → pick the repo. It reads `server/render.yaml` and will
    prompt for every value marked `sync: false`.
 
+   Leave **Branch** as `main` and **Blueprint Path** empty.
+
    *Blueprint, not "Web Service".* A plain web service ignores `render.yaml`
-   entirely, so `rootDir: server` never applies and you get the same missing-
-   Dockerfile error. If you already created one, either delete it and start
-   from Blueprint, or set **Root Directory** to `server` and **Dockerfile
-   Path** to `./Dockerfile` by hand.
+   entirely. If you already made one, delete it and start from Blueprint —
+   there is nothing to salvage, and the settings you would have to enter by
+   hand are the ones the blueprint already carries.
 3. Fill them in:
 
    | Key | Value |
