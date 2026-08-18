@@ -4,6 +4,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Lubnan.Application.Abstractions;
+using Lubnan.Application.Abstractions.Http;
 using Lubnan.Application.Abstractions.Security;
 using Lubnan.Domain.Users;
 using Microsoft.Extensions.Options;
@@ -89,10 +90,4 @@ internal sealed class TokenFactory(IOptions<AuthOptions> options, IClock clock) 
 public static class Claims
 {
     public const string SecurityStamp = "stamp";
-}
-
-/// <summary>Roles, as constants, so a typo is a build error and not a silent grant.</summary>
-public static class Roles
-{
-    public const string Admin = "admin";
 }

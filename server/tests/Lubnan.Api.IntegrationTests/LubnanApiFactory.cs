@@ -1,3 +1,5 @@
+using System.Net.Http.Json;
+using Lubnan.Application.Abstractions.Http;
 using Lubnan.Infrastructure.Persistence;
 using Lubnan.Infrastructure.Persistence.Seed;
 using Microsoft.AspNetCore.Hosting;
@@ -114,6 +116,92 @@ public sealed class LubnanApiFactory : WebApplicationFactory<Program>, IAsyncLif
 
         user.ConfirmEmail(clock.UtcNow);
         await db.SaveChangesAsync().ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// The state machine position of an account, read straight from the row.
+    /// </summary>
+    /// <remarks>
+    /// Asserted against the database rather than against an endpoint, because
+    /// the endpoints deliberately do not report it: a caller cannot ask whether
+    /// somebody else is suspended. The test needs the ground truth that the API
+    /// is careful not to expose.
+    /// </remarks>
+    public async Task<string> StateOfAsync(string email)
+    {
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var user = await db.Users
+            .AsNoTracking()
+            .SingleAsync(u => u.Email == Lubnan.Domain.Users.Email.Create(email).Value)
+            .ConfigureAwait(false);
+
+        return user.State.ToString();
+    }
+
+    /// <summary>
+    /// A state-changing request carrying the double-submit token, the way the
+    /// browser does it.
+    /// </summary>
+    /// <remarks>
+    /// The token is passed in rather than read back out of a cookie jar,
+    /// because the jar behind <c>HandleCookies</c> is not reachable from here.
+    /// It is captured from the login response instead — which is the same value
+    /// the browser would read, arriving the same way.
+    /// <para>
+    /// Done this way rather than by disabling CSRF for tests: the middleware
+    /// stays in the pipeline, so a change that breaks it breaks these too.
+    /// </para>
+    /// </remarks>
+    public static Task<HttpResponseMessage> PostWithCsrfAsync(
+        HttpClient client, string url, string csrf, object? body) =>
+        SendWithCsrfAsync(client, HttpMethod.Post, url, csrf, body);
+
+    public static Task<HttpResponseMessage> DeleteWithCsrfAsync(
+        HttpClient client, string url, string csrf) =>
+        SendWithCsrfAsync(client, HttpMethod.Delete, url, csrf, null);
+
+    private static async Task<HttpResponseMessage> SendWithCsrfAsync(
+        HttpClient client, HttpMethod method, string url, string csrf, object? body)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+
+        using var request = new HttpRequestMessage(method, url);
+
+        if (body is not null)
+        {
+            request.Content = JsonContent.Create(body);
+        }
+
+        if (!string.IsNullOrEmpty(csrf))
+        {
+            request.Headers.Add(AuthCookies.CsrfHeader, csrf);
+        }
+
+        return await client.SendAsync(request).ConfigureAwait(false);
+    }
+
+    /// <summary>Pull the readable CSRF cookie out of a Set-Cookie header.</summary>
+    public static string CsrfFrom(HttpResponseMessage response)
+    {
+        ArgumentNullException.ThrowIfNull(response);
+
+        if (!response.Headers.TryGetValues("Set-Cookie", out var cookies))
+        {
+            return string.Empty;
+        }
+
+        var header = cookies.FirstOrDefault(c =>
+            c.StartsWith(AuthCookies.CsrfCookie, StringComparison.Ordinal));
+
+        if (header is null)
+        {
+            return string.Empty;
+        }
+
+        var value = header.Split(';')[0];
+        return value[(value.IndexOf('=', StringComparison.Ordinal) + 1)..];
     }
 
     public new async Task DisposeAsync()

@@ -1,0 +1,81 @@
+# Render blueprint for the API.
+#
+# Render rather than Cloud Run, and the reason is billing shape rather than
+# engineering: Cloud Run bills per request, so a burst of traffic — friendly or
+# not — becomes an invoice. Render's free instance has a fixed ceiling and
+# simply queues or 503s instead. For a portfolio that is the right trade: a slow
+# site under attack beats a surprise bill.
+#
+# What this costs on the free plan, stated plainly:
+#   - The instance sleeps after 15 minutes idle. The next request pays a cold
+#     start of roughly 50 seconds while the container comes back.
+#   - 512 MB RAM, shared CPU.
+#   - No shell, no persistent disk. Both are fine here: state lives in Neon.
+#
+# Deploy:  Render dashboard → New → Blueprint → point at this repository.
+
+services:
+  - type: web
+    name: lubnan-api
+    runtime: docker
+    plan: free
+    region: frankfurt          # nearest free region to Lebanon
+    rootDir: server
+    dockerfilePath: ./Dockerfile
+
+    # Render probes this to decide whether a deploy succeeded. It must be the
+    # liveness endpoint, not readiness: /health/ready reports the database, and
+    # a database blip during a deploy would roll back a perfectly good image.
+    healthCheckPath: /health/live
+
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+
+      # One port everywhere: the Dockerfile's EXPOSE, its HEALTHCHECK, and
+      # Render's router all say 8080. Overriding it here would leave the
+      # container's own healthcheck probing a port nothing listens on, which
+      # reads as a crashloop rather than as a misconfiguration.
+      - key: PORT
+        value: "8080"
+
+      # ── Set these in the dashboard, not here ──────────────────────────────
+      # sync: false means "prompt me, and never store it in git".
+      - key: ConnectionStrings__Database
+        sync: false            # Neon pooled connection string
+      - key: Auth__SigningKey
+        sync: false            # openssl rand -base64 48
+      - key: Auth__HashKey
+        sync: false            # openssl rand -base64 48   (a DIFFERENT one)
+      - key: Mail__ApiKey
+        sync: false            # Resend API key
+
+      - key: Auth__Issuer
+        value: lubnan-api
+      - key: Auth__Audience
+        value: lubnan-web
+      - key: Auth__RequireSecureCookies
+        value: "true"
+
+      # The frontend origin. Confirmation and reset links are built from it, so
+      # a wrong value sends people to a dead host with a live token.
+      - key: Auth__WebBaseUrl
+        sync: false
+
+      - key: Mail__Provider
+        value: resend
+      - key: Mail__From
+        sync: false            # must be on a domain verified with Resend
+
+      # The browser never calls this host directly — Vercel proxies /api — so
+      # no origin needs to be allowed. Left empty on purpose: an allow-list
+      # nobody uses is an allow-list nobody maintains.
+      - key: Cors__Origins__0
+        value: ""
+
+      # Vercel is the only thing that talks to this service, and it is what the
+      # forwarded-IP headers must be trusted from. Without a value here the API
+      # ignores X-Forwarded-For entirely and rate-limits every visitor into one
+      # bucket. See the note in the deployment section of the README.
+      - key: KnownProxies__0
+        sync: false

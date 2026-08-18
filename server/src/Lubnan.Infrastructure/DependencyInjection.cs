@@ -2,6 +2,7 @@ using Lubnan.Application.Abstractions;
 using Lubnan.Application.Abstractions.Security;
 using Lubnan.Application.Features.Identity;
 using Lubnan.Infrastructure.Flights;
+using Lubnan.Infrastructure.Jobs;
 using Lubnan.Infrastructure.Mail;
 using Lubnan.Infrastructure.Persistence;
 using Lubnan.Infrastructure.Persistence.Interceptors;
@@ -10,6 +11,7 @@ using Lubnan.Infrastructure.Persistence.Seed;
 using Lubnan.Infrastructure.Security;
 using Lubnan.Infrastructure.Time;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Lubnan.Infrastructure;
@@ -26,8 +28,11 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
-        string connectionString)
+        string connectionString,
+        IConfiguration configuration)
     {
+        ArgumentNullException.ThrowIfNull(configuration);
+
         services.AddSingleton<IClock, SystemClock>();
 
         // Scoped, because the audit interceptor needs the clock and a future
@@ -81,11 +86,39 @@ public static class DependencyInjection
         services.AddSingleton<IIpHasher, IpHasher>();
         services.AddSingleton<IEmailTombstoner, EmailTombstoner>();
 
-        // Development writes mail to disk. A provider goes here behind the same
-        // interface, and no handler changes.
-        services.AddSingleton<IEmailSender, FileEmailSender>();
+        // Mail: the provider is a configuration value, not a code change.
+        //
+        // Development writes to disk so a fresh clone runs the whole
+        // registration flow with no account anywhere. Production posts to
+        // Resend. Both sit behind IEmailSender and no handler knows which.
+        services.AddOptions<MailOptions>()
+            .Bind(configuration.GetSection(MailOptions.SectionName));
 
-        services.AddOptions<OutboxOptions>();
+        var mail = configuration.GetSection(MailOptions.SectionName).Get<MailOptions>() ?? new MailOptions();
+
+        if (string.Equals(mail.Provider, "resend", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddHttpClient<IEmailSender, ResendEmailSender>(client =>
+            {
+                client.BaseAddress = new Uri("https://api.resend.com/");
+                client.Timeout = TimeSpan.FromSeconds(10);
+                client.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", mail.ApiKey);
+            });
+        }
+        else
+        {
+            services.AddSingleton<IEmailSender, FileEmailSender>();
+        }
+
+        // Anonymises accounts past their grace period. The only thing in the
+        // system that can reach AccountState.Anonymised.
+        services.AddOptions<PurgeOptions>()
+            .Bind(configuration.GetSection(PurgeOptions.SectionName));
+        services.AddHostedService<AccountPurgeWorker>();
+
+        services.AddOptions<OutboxOptions>()
+            .Bind(configuration.GetSection(OutboxOptions.SectionName));
         services.AddHostedService<OutboxProcessor>();
 
         services.AddHttpClient<IFlightBoard, BeirutAirportFlightBoard>(client =>

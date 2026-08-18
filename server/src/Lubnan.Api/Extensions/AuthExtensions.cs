@@ -12,9 +12,6 @@ namespace Lubnan.Api.Extensions;
 /// <summary>Authentication and authorization, wired once.</summary>
 public static class AuthExtensions
 {
-    /// <summary>Only an administrator may moderate.</summary>
-    public const string CanModerate = "CanModerate";
-
     public static IServiceCollection AddAuth(this IServiceCollection services, IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
@@ -93,7 +90,7 @@ public static class AuthExtensions
 
         services.AddAuthorization(auth =>
         {
-            auth.AddPolicy(CanModerate, policy => policy
+            auth.AddPolicy(Policies.CanModerate, policy => policy
                 .RequireAuthenticatedUser()
                 .RequireRole(Roles.Admin));
 

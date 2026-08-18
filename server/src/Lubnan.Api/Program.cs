@@ -24,7 +24,7 @@ var connectionString = builder.Configuration.GetConnectionString("Database")
 
 builder.Services
     .AddApplication()
-    .AddInfrastructure(connectionString)
+    .AddInfrastructure(connectionString, builder.Configuration)
     .AddAuth(builder.Configuration)
     .AddEndpoints(Lubnan.Application.DependencyInjection.Assembly)
     .AddHealth()
