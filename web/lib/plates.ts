@@ -35,17 +35,37 @@ export function cutoutCandidates(id: string): string[] {
   ];
 }
 
+/**
+ * The AVIF and WebP derived from a plate's PNG.
+ *
+ * Written by `scripts/optimise-plates.mjs` alongside the source. The PNG is
+ * kept as the `<img>` fallback inside a `<picture>`, so a plate whose
+ * derivatives have not been generated still renders — but every browser in
+ * use for a decade takes one of these instead, at roughly a fifteenth of the
+ * bytes.
+ */
+export function plateDerivatives(id: string): { avif: string; webp: string } {
+  const base = `/img/${plateSeries(id)}/${id}`;
+  return { avif: `${base}.avif`, webp: `${base}.webp` };
+}
+
 /** `/vid/A1.mp4`. Video is not an image and does not live under /img. */
 export function videoPath(id: string): string {
   return `/vid/${id}.mp4`;
 }
 
 /**
- * Motion plates, lightest first.
+ * The motion plate, if one has been dropped in.
  *
- * The raw A1 export is hundreds of megabytes. Prefer a web encode or a phone
- * cut when someone has dropped one in; otherwise the full file still plays.
+ * This used to try `-web`, `-m` and `M` suffixes first, on the theory that
+ * someone might supply a lighter encode. Nobody ever did, so every visit spent
+ * three requests collecting three 404s before reaching the file that exists —
+ * on the homepage, for every visitor, in production too, where the mp4s are
+ * gitignored and *none* of the four resolve.
+ *
+ * One candidate. A lighter encode belongs at `/vid/<id>.mp4`, replacing the
+ * heavy one, rather than as a naming convention nothing writes.
  */
 export function videoCandidates(id: string): string[] {
-  return [`/vid/${id}-web.mp4`, `/vid/${id}-m.mp4`, `/vid/${id}M.mp4`, videoPath(id)];
+  return [videoPath(id)];
 }

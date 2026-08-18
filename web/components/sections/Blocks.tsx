@@ -498,7 +498,21 @@ export function CommunityStrip({ showSlots }: Slots) {
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {posts.map((p) => (
             <article key={p.id} className="group flex flex-col">
-              <a href={`/community#${p.id}`}>
+              {/* The link wraps only the image, and PhotoField renders a div
+                  with role="img" rather than an <img> with alt text — so the
+                  anchor had no accessible name at all. A screen reader
+                  announced it as "link", with nothing to say where it went,
+                  and it is the only route from the homepage into a post.
+                  Naming it after the author and place matches what a sighted
+                  reader sees in the caption directly below. */}
+              <a
+                href={`/community#${p.id}`}
+                aria-label={
+                  p.placeName || p.region
+                    ? `${p.author.displayName} on ${p.placeName ?? p.region}`
+                    : `A post by ${p.author.displayName}`
+                }
+              >
                 <PhotoField
                   brief={p.body}
                   showSlots={showSlots}

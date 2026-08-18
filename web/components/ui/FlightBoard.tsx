@@ -129,8 +129,19 @@ export function FlightBoard() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((f) => (
-              <Row key={`${f.code}-${f.time}-${f.city}`} flight={f} />
+            {/* Index in the key, and it has to be.
+                Code + time + city looked unique and is not: a codeshare puts
+                the same flight number, minute and destination on the board
+                twice, which is exactly what the airport publishes. React
+                logged a duplicate-key warning on every render of the board -
+                a hundred and eighty-nine across one sweep - and the documented
+                consequence of duplicate keys is rows being duplicated or
+                dropped during reconciliation.
+                The list is a read-only snapshot replaced wholesale on refresh,
+                so positional identity is honest here rather than the usual
+                anti-pattern. */}
+            {rows.map((f, i) => (
+              <Row key={`${f.code}-${f.time}-${f.city}-${i}`} flight={f} />
             ))}
           </tbody>
         </table>

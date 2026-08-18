@@ -24,7 +24,7 @@ public sealed class UserTests
 
         Assert.True(user.RehashPassword("hash-v2").IsSuccess);
         Assert.Equal("hash-v2", user.PasswordHash);
-        Assert.Single(user.Sessions.Where(s => s.IsActive));
+        Assert.Single(user.Sessions, s => s.IsActive);
         Assert.Empty(user.DomainEvents.OfType<UserPasswordChanged>());
     }
 
@@ -36,7 +36,7 @@ public sealed class UserTests
         user.StartSession("refresh-hash", Now, TimeSpan.FromDays(30));
 
         Assert.True(user.ChangePassword("hash-v2", Now.AddMinutes(1)).IsSuccess);
-        Assert.Empty(user.Sessions.Where(s => s.IsActive));
+        Assert.DoesNotContain(user.Sessions, s => s.IsActive);
         Assert.Single(user.DomainEvents.OfType<UserPasswordChanged>());
     }
 

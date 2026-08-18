@@ -24,14 +24,69 @@ const HOP = new Set([
   'content-length',
 ]);
 
+/**
+ * Headers a client is not allowed to dictate.
+ *
+ * X-Forwarded-* decides, on the other side, what address the API believes a
+ * request came from — which is what rate limiting partitions on and what the
+ * audit log records. Forwarding the client's own copy would let anyone spoof
+ * their address to escape a limit or to sign a hostile action with somebody
+ * else's IP. They are stripped here and set from what this hop actually
+ * observed.
+ */
+const CLIENT_MUST_NOT_SET = new Set([
+  'x-forwarded-for',
+  'x-forwarded-host',
+  'x-forwarded-proto',
+  'x-forwarded-port',
+  'x-real-ip',
+  'forwarded',
+]);
+
+/** A hung upstream must not hold a Node connection open indefinitely. */
+const UPSTREAM_TIMEOUT_MS = 15_000;
+
 async function proxy(req: Request, path: string[]) {
   const incoming = new URL(req.url);
+
+  /*
+   * Refuse anything that could climb out of /api/.
+   *
+   * `path` arrives decoded, so a segment can literally be `..` — and `fetch`
+   * normalises the result, meaning `/api/%2e%2e/%2e%2e/health` would resolve
+   * against the API origin's root and reach endpoints this proxy is not meant
+   * to expose. An allow-list of URL-safe characters is the cheap, total fix;
+   * every real route here is lowercase words, digits, hyphens and GUIDs.
+   */
+  if (!path.every((seg) => /^[A-Za-z0-9._~-]+$/.test(seg) && seg !== '.' && seg !== '..')) {
+    return Response.json(
+      {
+        type: 'https://lubnan.app/errors/notFound',
+        title: 'No such endpoint.',
+        status: 404,
+        code: 'route.invalid',
+      },
+      { status: 404 },
+    );
+  }
+
   const target = `${API}/api/${path.join('/')}${incoming.search}`;
 
   const headers = new Headers();
   req.headers.forEach((value, key) => {
-    if (!HOP.has(key.toLowerCase())) headers.set(key, value);
+    const lower = key.toLowerCase();
+    if (HOP.has(lower) || CLIENT_MUST_NOT_SET.has(lower)) return;
+    headers.set(key, value);
   });
+
+  // Set from what this hop saw, after stripping whatever the client claimed.
+  const clientIp =
+    req.headers.get('x-vercel-forwarded-for') ??
+    req.headers.get('cf-connecting-ip') ??
+    null;
+  if (clientIp) headers.set('x-forwarded-for', clientIp);
+  headers.set('x-forwarded-proto', incoming.protocol.replace(':', ''));
+  headers.set('x-forwarded-host', incoming.host);
 
   const method = req.method.toUpperCase();
   const body = method === 'GET' || method === 'HEAD' ? undefined : await req.arrayBuffer();
@@ -43,6 +98,7 @@ async function proxy(req: Request, path: string[]) {
       headers,
       body,
       redirect: 'manual',
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     });
   } catch {
     return Response.json(

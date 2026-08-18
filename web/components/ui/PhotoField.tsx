@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useMediaQuery } from '@/lib/media';
-import { PLATE_EXTENSIONS, platePath, videoCandidates } from '@/lib/plates';
+import { PLATE_EXTENSIONS, platePath, plateDerivatives, videoCandidates } from '@/lib/plates';
 
 /**
  * An image slot.
@@ -58,6 +58,13 @@ export function PhotoField({
   const exhausted = extIndex >= PLATE_EXTENSIONS.length;
   const src = plate && !exhausted ? platePath(plate, PLATE_EXTENSIONS[extIndex]) : null;
   const showImage = Boolean(src);
+
+  /* Only the PNG has derivatives. Once the chain has fallen through to .jpg
+     the source is a one-off that the optimiser never saw, so offering an AVIF
+     that does not exist would make <picture> pick a 404 and stop - <source> has
+     no error fallback the way <img> does. */
+  const derivatives =
+    plate && !exhausted && PLATE_EXTENSIONS[extIndex] === 'png' ? plateDerivatives(plate) : null;
 
   /**
    * Catch images that finished before React attached its handlers.
@@ -223,6 +230,23 @@ export function PhotoField({
       aria-label={brief}
     >
       {showImage && src ? (
+        /* <picture>, not a bare <img>.
+           The plates are archival PNG exports - ninety-nine of them come to
+           233 MB, and PNG has no lossy mode, so there is no quality dial to
+           turn. scripts/optimise-plates.mjs derives AVIF and WebP next to each
+           source; the same files at 2560px wide come to 14 MB, a 94% saving,
+           and that is the difference between a thirty-megabyte page and a
+           two-megabyte one.
+           The PNG stays last so a plate with no derivative still renders, and
+           the browser picks the first format it understands - no JavaScript,
+           no layout shift, and the existing fallback chain below is untouched. */
+        <picture>
+          {derivatives ? (
+            <>
+              <source srcSet={derivatives.avif} type="image/avif" />
+              <source srcSet={derivatives.webp} type="image/webp" />
+            </>
+          ) : null}
         <img
           ref={imgRef}
           key={src}
@@ -246,6 +270,7 @@ export function PhotoField({
           decoding="async"
           className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ease-out"
         />
+        </picture>
       ) : null}
 
       {videoSrc ? (
