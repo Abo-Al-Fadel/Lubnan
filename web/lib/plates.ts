@@ -64,17 +64,24 @@ export function videoPath(id: string): string {
 }
 
 /**
- * The motion plate, if one has been dropped in.
+ * The motion plate, lightest usable encode first.
  *
- * This used to try `-web`, `-m` and `M` suffixes first, on the theory that
- * someone might supply a lighter encode. Nobody ever did, so every visit spent
- * three requests collecting three 404s before reaching the file that exists —
- * on the homepage, for every visitor, in production too, where the mp4s are
- * gitignored and *none* of the four resolve.
+ * Two files, because a hero video is the one asset where the phone/desktop gap
+ * actually matters: the desktop encode is more than twice the bytes, and a
+ * phone is both the slowest connection and the smallest screen to spend them
+ * on. `-mobile` is offered first on a narrow viewport and `-final` everywhere
+ * else, and PhotoField probes with HEAD so a missing file costs one request
+ * rather than a broken hero.
  *
- * One candidate. A lighter encode belongs at `/vid/<id>.mp4`, replacing the
- * heavy one, rather than as a naming convention nothing writes.
+ * The raw exports are hundreds of megabytes and stay gitignored. Only the two
+ * encoded files are committed, which is why the names are specific rather than
+ * a convention nothing writes - the last version of this function guessed at
+ * three suffixes that had never existed and collected three 404s per visit.
  */
-export function videoCandidates(id: string): string[] {
-  return [videoPath(id)];
+export function videoCandidates(id: string, phone = false): string[] {
+  const base = `/vid/${id}`;
+
+  return phone
+    ? [`${base}-mobile.mp4`, `${base}-final.mp4`]
+    : [`${base}-final.mp4`, `${base}-mobile.mp4`];
 }

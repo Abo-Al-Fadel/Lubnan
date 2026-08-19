@@ -26,6 +26,14 @@ ref/
 # returns with no code change.
 web/public/vid/*.mp4
 
+# ...except the two encoded for the web. The raw exports are 583 MB and 493 MB,
+# far past GitHub's 100 MB hard limit; these are 19 MB and 9 MB, which is a
+# hero that loads rather than a hero that cannot be committed. Named
+# specifically rather than by a wildcard, so a future 171 MB experiment in the
+# same folder is not swept in by accident.
+!web/public/vid/*-final.mp4
+!web/public/vid/*-mobile.mp4
+
 # ── Backend ─────────────────────────────────────────────────────────────────
 #
 # Note what is NOT ignored: server/src/**/Persistence/Migrations. Migrations are

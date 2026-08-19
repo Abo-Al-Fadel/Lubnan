@@ -131,7 +131,7 @@ export function PhotoField({
 
     let cancelled = false;
     const id = window.setTimeout(() => {
-      const candidates = videoCandidates(video);
+      const candidates = videoCandidates(video, isPhone);
       const probe = async (i: number) => {
         if (cancelled) return;
         if (i >= candidates.length) {
