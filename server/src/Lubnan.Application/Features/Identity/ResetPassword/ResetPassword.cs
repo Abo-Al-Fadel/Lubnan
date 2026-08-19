@@ -26,11 +26,26 @@ internal sealed class Validator : AbstractValidator<Command>
     }
 }
 
-internal sealed class Handler(IAppDbContext db, ITokenFactory tokens, IPasswordHasher passwords, IClock clock)
+internal sealed class Handler(
+    IAppDbContext db,
+    ITokenFactory tokens,
+    IPasswordHasher passwords,
+    IBreachedPasswordCheck breached,
+    IClock clock)
     : ICommandHandler<Command, Result>
 {
     public async Task<Result> Handle(Command command, CancellationToken cancellationToken)
     {
+        // Before the token is spent, not after. Rejecting the new password
+        // once the token was already consumed would leave somebody locked out
+        // holding a link that no longer works, mid-reset.
+        if (await breached.IsBreachedAsync(command.Password, cancellationToken).ConfigureAwait(false))
+        {
+            return Result.Failure(Error.Validation(
+                "password.breached",
+                "That password has appeared in a public data breach. Choose a different one."));
+        }
+
         var now = clock.UtcNow;
         var hash = tokens.HashToken(command.Token);
 

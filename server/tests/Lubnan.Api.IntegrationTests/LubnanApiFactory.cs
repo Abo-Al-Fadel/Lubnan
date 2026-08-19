@@ -1,11 +1,14 @@
 using System.Net.Http.Json;
 using Lubnan.Application.Abstractions.Http;
+using Lubnan.Application.Abstractions.Security;
 using Lubnan.Infrastructure.Persistence;
 using Lubnan.Infrastructure.Persistence.Seed;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Testcontainers.PostgreSql;
 using Xunit;
 
@@ -219,7 +222,31 @@ public sealed class LubnanApiFactory : WebApplicationFactory<Program>, IAsyncLif
         // test host is not listening on, and every assertion would be about a
         // redirect.
         builder.UseEnvironment("Development");
+
+        // The breach check is the one dependency that reaches the public
+        // internet on a path the tests exercise constantly. Left real, every
+        // registration in the suite would call api.pwnedpasswords.com — slow,
+        // rude, and a suite that fails when someone's wifi drops.
+        //
+        // Replaced rather than disabled: the check still runs, so the wiring is
+        // covered and a handler that stopped calling it would still be caught.
+        // Only the corpus is local.
+        builder.ConfigureTestServices(services =>
+        {
+            services.RemoveAll<IBreachedPasswordCheck>();
+            services.AddSingleton<IBreachedPasswordCheck, StubBreachedPasswordCheck>();
+        });
     }
+}
+
+/// <summary>One known-bad password, so both branches are reachable offline.</summary>
+internal sealed class StubBreachedPasswordCheck : IBreachedPasswordCheck
+{
+    /// <summary>Genuinely in the corpus, tens of thousands of times over.</summary>
+    public const string Breached = "password12345678";
+
+    public Task<bool> IsBreachedAsync(string password, CancellationToken cancellationToken = default) =>
+        Task.FromResult(string.Equals(password, Breached, StringComparison.Ordinal));
 }
 
 /// <summary>

@@ -49,6 +49,7 @@ internal sealed class Validator : AbstractValidator<Command>
 internal sealed class Handler(
     IAppDbContext db,
     IPasswordHasher passwords,
+    IBreachedPasswordCheck breached,
     IClock clock)
     : ICommandHandler<Command, Result>
 {
@@ -64,6 +65,21 @@ internal sealed class Handler(
         if (displayName.IsFailure)
         {
             return displayName;
+        }
+
+        // Checked before anything is written, so a breached password never
+        // reaches the database even briefly.
+        //
+        // This completes the rule the validator starts. Length and no character
+        // classes is only two thirds of what NIST and the NCSC actually say;
+        // the third is "and check it against known breaches", without which a
+        // twelve-character password can still be qwertyuiop12. Credential
+        // stuffing does not guess - it replays lists, and this is the list.
+        if (await breached.IsBreachedAsync(command.Password, cancellationToken).ConfigureAwait(false))
+        {
+            return Result.Failure(Error.Validation(
+                "password.breached",
+                "That password has appeared in a public data breach. Choose a different one."));
         }
 
         var now = clock.UtcNow;

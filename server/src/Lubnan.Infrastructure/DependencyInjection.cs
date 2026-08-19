@@ -111,6 +111,17 @@ public static class DependencyInjection
             services.AddSingleton<IEmailSender, FileEmailSender>();
         }
 
+        // Breached-password checking, over k-anonymity so the password never
+        // leaves this process. Free, keyless, and short-timeout because a
+        // registration must not wait on a third party.
+        services.AddHttpClient<IBreachedPasswordCheck, HibpBreachedPasswordCheck>(client =>
+        {
+            client.BaseAddress = new Uri("https://api.pwnedpasswords.com/");
+            client.Timeout = TimeSpan.FromSeconds(3);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(
+                "Lubnan/1.0 (+https://github.com/Abo-Al-Fadel/Lubnan)");
+        });
+
         // Anonymises accounts past their grace period. The only thing in the
         // system that can reach AccountState.Anonymised.
         services.AddOptions<PurgeOptions>()
