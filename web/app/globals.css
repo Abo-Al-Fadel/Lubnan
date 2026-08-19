@@ -16,6 +16,16 @@
    ========================================================================= */
 
 @layer base {
+  /* <picture> is a wrapper, and it should not behave like one.
+     PhotoField wraps its <img> in a <picture> so the browser can pick AVIF or
+     WebP. That put a real element between the field and the image, which broke
+     every `[&>img]` rule on the site — thirty-two of them — and silently
+     stopped the hover zooms. Those are descendant selectors now, and this makes
+     the wrapper layout-neutral so it cannot cause the next surprise either. */
+  picture {
+    display: contents;
+  }
+
   :root {
     --space-2: 0.5rem;
     --space-3: 0.75rem;

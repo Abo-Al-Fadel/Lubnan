@@ -112,7 +112,7 @@ export function Lede({
               brief={a.brief}
               showSlots={showSlots}
               plate={a.plate}
-              className={`${a.ratio} w-full [&>img]:transition-transform [&>img]:duration-[900ms] [&>img]:ease-out group-hover:[&>img]:scale-[1.06]`}
+              className={`${a.ratio} w-full [&_img]:transition-transform [&_img]:duration-[900ms] [&_img]:ease-out group-hover:[&_img]:scale-[1.06]`}
               variant={i % 2 === 0 ? 'low' : 'high'}
             />
             <div className="mt-3 flex items-baseline justify-between gap-2 border-t border-ink-ghost pt-3">
@@ -159,7 +159,7 @@ export function DestinationRail({ showSlots }: Slots) {
               brief={`${d.name}, ${d.region}. Establishing shot that reads at card size, natural light, no people in frame`}
               showSlots={showSlots}
               plate={d.plateRail}
-              className="aspect-[4/5] w-full [&>img]:transition-transform [&>img]:duration-[900ms] [&>img]:ease-out group-hover:[&>img]:scale-[1.06]"
+              className="aspect-[4/5] w-full [&_img]:transition-transform [&_img]:duration-[900ms] [&_img]:ease-out group-hover:[&_img]:scale-[1.06]"
               variant={Number(d.index) % 2 === 0 ? 'low' : 'mid'}
             />
             <div className="mt-4 flex items-baseline justify-between gap-3">
@@ -226,7 +226,7 @@ export function DestinationMosaic({ showSlots }: Slots) {
               brief={`${d.name}, ${d.region}. ${i === 0 ? 'wide establishing shot with room for an overlaid caption' : 'mid shot, single clear subject'}, natural light`}
               showSlots={showSlots}
               plate={d.plateMosaic}
-              className="absolute inset-0 h-full w-full [&>img]:transition-transform [&>img]:duration-[900ms] [&>img]:ease-out group-hover:[&>img]:scale-[1.06]"
+              className="absolute inset-0 h-full w-full [&_img]:transition-transform [&_img]:duration-[900ms] [&_img]:ease-out group-hover:[&_img]:scale-[1.06]"
               variant={i % 3 === 0 ? 'low' : i % 3 === 1 ? 'mid' : 'high'}
             />
             <div className="scrim absolute inset-0" aria-hidden="true" />
@@ -517,7 +517,7 @@ export function CommunityStrip({ showSlots }: Slots) {
                   brief={p.body}
                   showSlots={showSlots}
                   plate={p.plate ?? undefined}
-                  className="aspect-square w-full [&>img]:transition-transform [&>img]:duration-[900ms] [&>img]:ease-out group-hover:[&>img]:scale-[1.05]"
+                  className="aspect-square w-full [&_img]:transition-transform [&_img]:duration-[900ms] [&_img]:ease-out group-hover:[&_img]:scale-[1.05]"
                   variant="mid"
                 />
               </a>

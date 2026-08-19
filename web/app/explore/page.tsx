@@ -180,7 +180,7 @@ export default function ExplorePage() {
                       brief={REGION_PLATES[r].brief}
                       showSlots={false}
                       plate={REGION_PLATES[r].plate}
-                      className={`aspect-[3/4] w-full transition-opacity duration-300 [&>img]:transition-transform [&>img]:duration-[900ms] [&>img]:ease-out group-hover:[&>img]:scale-[1.06] ${
+                      className={`aspect-[3/4] w-full transition-opacity duration-300 [&_img]:transition-transform [&_img]:duration-[900ms] [&_img]:ease-out group-hover:[&_img]:scale-[1.06] ${
                         region && !active ? 'opacity-45' : 'opacity-100'
                       }`}
                       variant="mid"
@@ -238,7 +238,7 @@ export default function ExplorePage() {
                   brief={`${p.name}, ${p.region}. Establishing shot, warm natural light`}
                   showSlots={false}
                   plate={p.plateMosaic ?? p.plateRail}
-                  className="absolute inset-0 h-full w-full [&>img]:transition-transform [&>img]:duration-[900ms] [&>img]:ease-out group-hover:[&>img]:scale-[1.06]"
+                  className="absolute inset-0 h-full w-full [&_img]:transition-transform [&_img]:duration-[900ms] [&_img]:ease-out group-hover:[&_img]:scale-[1.06]"
                   variant={i % 3 === 0 ? 'low' : i % 3 === 1 ? 'mid' : 'high'}
                 />
                 <div className="scrim absolute inset-0" aria-hidden="true" />

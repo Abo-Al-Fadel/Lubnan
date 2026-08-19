@@ -161,7 +161,7 @@ export default function ProfilePage() {
                             brief={`${p.name}. Establishing shot, warm natural light`}
                             showSlots={false}
                             plate={p.plateMosaic ?? p.plateRail}
-                            className="aspect-[4/5] w-full [&>img]:transition-transform [&>img]:duration-[900ms] [&>img]:ease-out group-hover:[&>img]:scale-[1.05]"
+                            className="aspect-[4/5] w-full [&_img]:transition-transform [&_img]:duration-[900ms] [&_img]:ease-out group-hover:[&_img]:scale-[1.05]"
                             variant="mid"
                           />
                           <p className="mt-3 font-display text-base uppercase tracking-wide text-ink">

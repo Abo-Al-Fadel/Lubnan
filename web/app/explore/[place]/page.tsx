@@ -361,7 +361,7 @@ export default function PlacePage({ params }: { params: { place: string } }) {
                   brief={`${p.name}. Establishing shot, warm light`}
                   showSlots={false}
                   plate={p.plateMosaic ?? p.plateRail}
-                  className="aspect-[4/3] w-full [&>img]:transition-transform [&>img]:duration-[900ms] [&>img]:ease-out group-hover:[&>img]:scale-[1.06]"
+                  className="aspect-[4/3] w-full [&_img]:transition-transform [&_img]:duration-[900ms] [&_img]:ease-out group-hover:[&_img]:scale-[1.06]"
                   variant="mid"
                 />
                 <div className="mt-4 flex items-baseline justify-between gap-3">
