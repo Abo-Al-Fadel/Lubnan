@@ -24,6 +24,7 @@ export function PhotoField({
   className = '',
   variant = 'mid',
   priority = false,
+  sizes = '(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 33vw',
   objectPosition,
   video,
   children,
@@ -40,6 +41,15 @@ export function PhotoField({
   objectPosition?: string;
   /** Plate ID of an .mp4 to play over the still once it can. */
   video?: string;
+  /**
+   * How wide this plate will actually be painted, for picking a candidate.
+   *
+   * The default assumes a grid: full width on a phone, half on a tablet, a
+   * third on a desktop. A full-bleed hero should pass "100vw" — getting this
+   * wrong only costs the wrong candidate, never a broken image, which is why
+   * a reasonable default beats requiring every caller to think about it.
+   */
+  sizes?: string;
   children?: React.ReactNode;
 }) {
   const [extIndex, setExtIndex] = useState(0);
@@ -243,8 +253,8 @@ export function PhotoField({
         <picture>
           {derivatives ? (
             <>
-              <source srcSet={derivatives.avif} type="image/avif" />
-              <source srcSet={derivatives.webp} type="image/webp" />
+              <source srcSet={derivatives.avif} sizes={sizes} type="image/avif" />
+              <source srcSet={derivatives.webp} sizes={sizes} type="image/webp" />
             </>
           ) : null}
         <img
@@ -268,7 +278,7 @@ export function PhotoField({
           loading={priority ? 'eager' : 'lazy'}
           fetchPriority={priority ? 'high' : 'auto'}
           decoding="async"
-          className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ease-out"
+          className="absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ease-out motion-reduce:transition-none"
         />
         </picture>
       ) : null}

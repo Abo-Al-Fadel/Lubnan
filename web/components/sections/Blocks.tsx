@@ -108,13 +108,40 @@ export function Lede({
             key={a.plate}
             className={`group ${a.shift} ${i === 4 ? 'col-span-2 md:col-span-1' : ''}`}
           >
-            <PhotoField
-              brief={a.brief}
-              showSlots={showSlots}
-              plate={a.plate}
-              className={`${a.ratio} w-full [&_img]:transition-transform [&_img]:duration-[900ms] [&_img]:ease-out group-hover:[&_img]:scale-[1.06]`}
-              variant={i % 2 === 0 ? 'low' : 'high'}
-            />
+            {/* The plate and its hover reading, in one positioned box.
+                The caption below stays where it is: hover is not available on a
+                touch screen, so anything only reachable that way is invisible to
+                half the audience. This is an enhancement on top of information
+                that is already readable, never the only copy of it. */}
+            <div className="relative overflow-hidden">
+              <PhotoField
+                brief={a.brief}
+                showSlots={showSlots}
+                plate={a.plate}
+                className={`${a.ratio} w-full [&_img]:transition-transform [&_img]:duration-[900ms] [&_img]:ease-out group-hover:[&_img]:scale-[1.06]`}
+                variant={i % 2 === 0 ? 'low' : 'high'}
+              />
+
+              {/* Black rather than a palette token, deliberately. This darkens a
+                  photograph, and a photograph is the same photograph in both
+                  themes — Gentle's --hero-ink is *dark*, so borrowing it here
+                  would print dark type on a darkened plate. The overlay brings
+                  its own contrast instead of inheriting the page's. */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 bg-black/0 transition-colors duration-500 ease-out motion-reduce:transition-none [@media(hover:hover)]:group-hover:bg-black/55 [@media(hover:hover)]:group-focus-within:bg-black/55"
+              />
+
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 translate-y-3 p-4 opacity-0 transition-[opacity,transform] duration-500 ease-out motion-reduce:transition-none [@media(hover:hover)]:group-hover:translate-y-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-focus-within:translate-y-0 [@media(hover:hover)]:group-focus-within:opacity-100">
+                <p className="font-display text-sm uppercase tracking-wide text-white">
+                  {a.place}
+                  <span className="micro figures ms-2 text-white/70">{a.when}</span>
+                </p>
+                <p className="mt-1.5 max-w-[34ch] text-[0.72rem] leading-[1.6] text-white/85">
+                  {a.fact}
+                </p>
+              </div>
+            </div>
             <div className="mt-3 flex items-baseline justify-between gap-2 border-t border-ink-ghost pt-3">
               <span className="font-display text-sm uppercase tracking-wide text-ink">
                 {a.place}
@@ -230,12 +257,27 @@ export function DestinationMosaic({ showSlots }: Slots) {
               variant={i % 3 === 0 ? 'low' : i % 3 === 1 ? 'mid' : 'high'}
             />
             <div className="scrim absolute inset-0" aria-hidden="true" />
-            <div className="absolute bottom-0 left-0 p-4 transition-transform duration-500 ease-out group-hover:-translate-y-1 md:p-6">
+
+            {/* Deepens on hover, on top of the permanent scrim that keeps the
+                name legible at rest. */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 bg-black/0 transition-colors duration-500 ease-out motion-reduce:transition-none [@media(hover:hover)]:group-hover:bg-black/45 [@media(hover:hover)]:group-focus-within:bg-black/45"
+            />
+
+            <div className="absolute bottom-0 left-0 p-4 transition-transform duration-500 ease-out motion-reduce:transition-none group-hover:-translate-y-1 md:p-6">
               <p className="font-display text-xl uppercase tracking-wide text-hero-ink md:text-2xl">
                 {d.name}
               </p>
               <p className="micro mt-2 text-hero-ink-dim">
                 {d.index} · {tc(`region.${d.region}`, d.region)}
+              </p>
+
+              {/* The note is the thing worth reading and the thing there is no
+                  room for at rest. Revealed rather than cropped, so the tile
+                  stays a photograph until somebody asks it a question. */}
+              <p className="pointer-events-none mt-0 max-w-[42ch] translate-y-2 text-[0.75rem] leading-[1.6] text-white/85 opacity-0 transition-[opacity,transform,margin] duration-500 ease-out motion-reduce:transition-none [@media(hover:hover)]:group-hover:mt-3 [@media(hover:hover)]:group-hover:translate-y-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-focus-within:mt-3 [@media(hover:hover)]:group-focus-within:translate-y-0 [@media(hover:hover)]:group-focus-within:opacity-100">
+                {d.note}
               </p>
             </div>
           </a>

@@ -46,7 +46,16 @@ export function cutoutCandidates(id: string): string[] {
  */
 export function plateDerivatives(id: string): { avif: string; webp: string } {
   const base = `/img/${plateSeries(id)}/${id}`;
-  return { avif: `${base}.avif`, webp: `${base}.webp` };
+
+  // Two candidates, so the browser can decline to download and decode a 2560px
+  // plate onto a 390px screen. The saving is bytes twice over: fewer to
+  // transfer, and a quarter of the pixels to decode — and AVIF decoding is main
+  // thread work, which is the part that reads as slowness even on a fast
+  // connection.
+  return {
+    avif: `${base}-1280.avif 1280w, ${base}.avif 2560w`,
+    webp: `${base}-1280.webp 1280w, ${base}.webp 2560w`,
+  };
 }
 
 /** `/vid/A1.mp4`. Video is not an image and does not live under /img. */

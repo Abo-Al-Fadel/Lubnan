@@ -54,6 +54,7 @@ export function HeroOcclusion({
         plate={variation.heroPlate}
         video={variation.heroVideo}
         priority
+        sizes="100vw"
         className="anim-plate vt-hero absolute inset-0"
         variant="high"
       />

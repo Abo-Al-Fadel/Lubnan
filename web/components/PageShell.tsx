@@ -56,6 +56,7 @@ export function PageBanner({
         showSlots={showSlots}
         plate={plate}
         priority
+        sizes="100vw"
         className="anim-plate absolute inset-0"
         variant="high"
       />
