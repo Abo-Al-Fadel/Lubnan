@@ -77,11 +77,17 @@ export function videoPath(id: string): string {
  * encoded files are committed, which is why the names are specific rather than
  * a convention nothing writes - the last version of this function guessed at
  * three suffixes that had never existed and collected three 404s per visit.
+ *
+ * The suffixes carry their encoder settings (`-web24` is 24fps, `-m720` is
+ * 720p) because that is what the files are actually called. Renaming them to
+ * something role-shaped would read better here and would mean the names in the
+ * repository no longer match the names on the disk they were produced on,
+ * which is a worse trade than a slightly technical string.
  */
 export function videoCandidates(id: string, phone = false): string[] {
   const base = `/vid/${id}`;
 
   return phone
-    ? [`${base}-mobile.mp4`, `${base}-final.mp4`]
-    : [`${base}-final.mp4`, `${base}-mobile.mp4`];
+    ? [`${base}-m720.mp4`, `${base}-web24.mp4`]
+    : [`${base}-web24.mp4`, `${base}-m720.mp4`];
 }

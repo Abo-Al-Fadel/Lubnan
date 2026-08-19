@@ -31,8 +31,8 @@ web/public/vid/*.mp4
 # hero that loads rather than a hero that cannot be committed. Named
 # specifically rather than by a wildcard, so a future 171 MB experiment in the
 # same folder is not swept in by accident.
-!web/public/vid/*-final.mp4
-!web/public/vid/*-mobile.mp4
+!web/public/vid/*-web24.mp4
+!web/public/vid/*-m720.mp4
 
 # ── Backend ─────────────────────────────────────────────────────────────────
 #
