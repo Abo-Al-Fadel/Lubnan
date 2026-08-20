@@ -25,22 +25,30 @@ services:
     runtime: docker
     plan: free
     region: frankfurt          # nearest free region to Lebanon
-    # All three resolve from the REPOSITORY ROOT, not from each other, and that
-    # is the part that catches people.
+    # rootDir scopes the other two. They are relative to IT, not to the
+    # repository root.
     #
-    # dockerfilePath: ./Dockerfile with rootDir: server looks for a Dockerfile
-    # at the repo root and fails with "no such file or directory" — naming a
-    # file that does exist, one directory down. Spell both out from the root and
-    # there is nothing to get wrong.
+    # This was the opposite way round and Render answered:
     #
-    # dockerContext matters as much as the path: the build copies
-    # Directory.Build.props, Directory.Packages.props and .editorconfig, all of
-    # which live in server/, so a context of the repo root would send the whole
-    # 240 MB of web/public over the wire and still not find them where the
-    # Dockerfile expects.
+    #   lstat /opt/render/project/src/server/server: no such file or directory
+    #
+    # /opt/render/project/src is the repository root, so `rootDir: server` plus
+    # `dockerfilePath: ./server/Dockerfile` resolved to server/server - the
+    # prefix applied twice. The doubled path in the error is the whole
+    # diagnosis, and it is the only place this behaviour is stated.
+    #
+    # It stayed hidden for several commits because the service was created from
+    # the dashboard before this file existed, so its own Build & Deploy settings
+    # were in charge and the blueprint was inert. The first deploy that actually
+    # read this file was the first one to fail.
+    #
+    # dockerContext must be `.` - which is server/ - because the build copies
+    # Directory.Build.props, Directory.Packages.props and .editorconfig from
+    # there. The repository root as context would ship all of web/public and
+    # still not find them.
     rootDir: server
-    dockerfilePath: ./server/Dockerfile
-    dockerContext: ./server
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
 
     # Render probes this to decide whether a deploy succeeded. It must be the
     # liveness endpoint, not readiness: /health/ready reports the database, and

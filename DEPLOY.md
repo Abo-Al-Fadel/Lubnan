@@ -96,7 +96,16 @@ dead site.
 
 ## 2. Render — the API
 
-> **Two things have to be true before this works, and both fail confusingly.**
+> **Three things have to be true before this works, and all three fail
+> confusingly.**
+>
+> `rootDir` scopes `dockerfilePath` and `dockerContext` — they are relative to
+> **it**, not to the repository root. Getting that backwards produces
+> `lstat /opt/render/project/src/server/server: no such file or directory`,
+> where the doubled `server/server` is the entire diagnosis. If you set the
+> service up from the dashboard instead, **Root Directory** `server` pairs with
+> **Dockerfile Path** `./Dockerfile` — not `./server/Dockerfile`.
+>
 >
 > `render.yaml` must be on the branch Render is building — `main` — or you get
 > `failed to read dockerfile: open Dockerfile: no such file or directory`,
