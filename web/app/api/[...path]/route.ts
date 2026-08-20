@@ -9,6 +9,15 @@
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+/**
+ * Long enough to outlast a cold start.
+ *
+ * Render's free instance sleeps after 15 minutes idle and takes roughly fifty
+ * seconds to come back. Vercel's Hobby plan allows a Node function up to sixty,
+ * so this is the ceiling and the upstream timeout sits just under it.
+ */
+export const maxDuration = 60;
+
 const API = process.env.API_ORIGIN ?? 'http://localhost:5080';
 
 const HOP = new Set([
@@ -43,8 +52,22 @@ const CLIENT_MUST_NOT_SET = new Set([
   'forwarded',
 ]);
 
-/** A hung upstream must not hold a Node connection open indefinitely. */
-const UPSTREAM_TIMEOUT_MS = 15_000;
+/**
+ * A hung upstream must not hold a Node connection open indefinitely - but the
+ * bound has to clear a cold start, or it aborts the very requests it should be
+ * waiting for.
+ *
+ * This was fifteen seconds, which is shorter than the fifty a sleeping Render
+ * instance needs to wake. So the first visitor after any quiet period got a 502
+ * "The API is not reachable" - and the retry usually worked, because the first
+ * attempt had woken the instance. That is the shape the failure took: broken
+ * once, fine on the second press, impossible to reproduce deliberately.
+ *
+ * Fifty-five leaves five seconds inside Vercel's sixty-second ceiling for this
+ * function to write its own response, so a genuinely dead upstream still
+ * answers 502 rather than being killed by the platform.
+ */
+const UPSTREAM_TIMEOUT_MS = 55_000;
 
 async function proxy(req: Request, path: string[]) {
   const incoming = new URL(req.url);
