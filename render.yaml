@@ -98,3 +98,16 @@ services:
       # bucket. See the note in the deployment section of the README.
       - key: KnownProxies__0
         sync: false
+
+      # Error tracking. Leave unset and Sentry never initialises - the code
+      # checks for a value before wiring anything, so an empty DSN costs
+      # nothing rather than failing at startup.
+      - key: Sentry__Dsn
+        sync: false
+
+      # The airport scraper's kill switch. Set to "false" when
+      # beirutairport.gov.lb changes their markup or starts answering slowly,
+      # and /plan serves its static schedule immediately instead of paying an
+      # eight-second timeout per request on the way to the same fallback.
+      - key: Flights__Enabled
+        value: "true"

@@ -59,12 +59,27 @@ internal sealed class ResendEmailSender(HttpClient http, IOptions<MailOptions> o
             },
             cancellationToken).ConfigureAwait(false);
 
-        // Throws on failure, deliberately. Every caller that cannot tolerate a
-        // send failure already catches it — password reset swallows it so the
-        // error path cannot become an account-enumeration oracle — and the
-        // outbox retries. A sender that returned quietly on a 4xx would turn a
-        // bad API key into "mail silently stopped working", which is the
-        // failure nobody notices for a month.
-        response.EnsureSuccessStatusCode();
+        if (response.IsSuccessStatusCode)
+        {
+            return;
+        }
+
+        // Read the body before throwing, because the body is the entire
+        // diagnosis and EnsureSuccessStatusCode discards it.
+        //
+        // Resend answers a rejected send with a 4xx and a JSON explanation:
+        // "The from address is not verified", "domain not found", "invalid API
+        // key". Throwing on the status alone produced `outbox_messages.error`
+        // rows that said "Response status code does not indicate success: 403"
+        // — true, useless, and indistinguishable between three unrelated
+        // misconfigurations. A rejected send also never appears in Resend's own
+        // Emails log, so that body is the only place the reason exists at all.
+        var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+
+        throw new HttpRequestException(
+            $"Resend refused the message ({(int)response.StatusCode} {response.StatusCode}): "
+            + (body.Length > 400 ? body[..400] : body),
+            null,
+            response.StatusCode);
     }
 }

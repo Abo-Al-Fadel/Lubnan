@@ -65,6 +65,46 @@ builder.Services.Configure<ForwardedHeadersOptions>(forwarded =>
     }
 });
 
+// ── Error tracking ──────────────────────────────────────────────────────────
+//
+// Inert unless a DSN is configured, which is what makes it safe to have here at
+// all: a fresh clone, a test run and CI all construct this and none of them
+// ship anything anywhere.
+//
+// It exists because the alternative to error tracking is not "no error
+// tracking" - it is learning about outages from the person they happened to.
+// The Brotli bug in the proxy answered 200 with an empty body on every request
+// for two days; nothing in any log said so, because nothing had failed.
+var sentryDsn = builder.Configuration["Sentry:Dsn"];
+
+if (!string.IsNullOrWhiteSpace(sentryDsn))
+{
+    builder.WebHost.UseSentry(sentry =>
+    {
+        sentry.Dsn = sentryDsn;
+        sentry.Environment = builder.Environment.EnvironmentName;
+
+        // Errors always; traces at 10%. The free tier is 5,000 events a month
+        // and a traced request is an event - sampling every one would spend the
+        // month's allowance on a quiet afternoon and leave nothing for the day
+        // something breaks.
+        sentry.TracesSampleRate = 0.1;
+
+        // Never send the request body. It carries passwords on exactly the
+        // endpoints most likely to throw.
+        sentry.MaxRequestBodySize = Sentry.Extensibility.RequestSize.None;
+
+        // Nor the reader. An error report needs to say what broke, not who was
+        // holding it - and this application deliberately does not log IP
+        // addresses anywhere else either.
+        sentry.SendDefaultPii = false;
+
+        // A 404 or a 429 is the system working. Reporting them as errors buries
+        // the ones that are not underneath thousands that are.
+        sentry.AddExceptionFilterForType<BadHttpRequestException>();
+    });
+}
+
 // Every failure, expected or not, leaves as RFC 7807.
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();

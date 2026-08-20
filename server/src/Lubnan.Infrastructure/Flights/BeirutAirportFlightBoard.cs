@@ -1,4 +1,5 @@
 using Lubnan.Application.Abstractions;
+using Microsoft.Extensions.Options;
 using Lubnan.Application.Features.Flights;
 
 namespace Lubnan.Infrastructure.Flights;
@@ -7,7 +8,33 @@ namespace Lubnan.Infrastructure.Flights;
 /// Live board from the airport's public flight page, with a short cache and
 /// a static fallback so a blip at beirutairport.gov.lb does not empty /plan.
 /// </summary>
-internal sealed class BeirutAirportFlightBoard(HttpClient http, IClock clock) : IFlightBoard
+public sealed class FlightOptions
+{
+    public const string SectionName = "Flights";
+
+    /// <summary>
+    /// Whether to read the airport's page at all.
+    /// </summary>
+    /// <remarks>
+    /// A kill switch, because this is the one part of the system that depends
+    /// on somebody else's HTML. When beirutairport.gov.lb changes their markup
+    /// - not if - the parser stops finding rows and /plan falls back to the
+    /// static schedule anyway. But if their page starts answering slowly rather
+    /// than differently, every board request pays the eight-second timeout
+    /// before falling back.
+    ///
+    /// Setting Flights__Enabled=false skips the fetch entirely and serves the
+    /// fallback immediately. It is a configuration change on a running service
+    /// rather than a deploy, which is the difference between a two-minute fix
+    /// and a twenty-minute one at the point where somebody has noticed.
+    /// </remarks>
+    public bool Enabled { get; set; } = true;
+}
+
+internal sealed class BeirutAirportFlightBoard(
+    HttpClient http,
+    IOptions<FlightOptions> options,
+    IClock clock) : IFlightBoard
 {
     internal const string ArrivalsPath = "_flight.php?lang=en&type=arivl";
     internal const string DeparturesPath = "_flight.php?lang=en&type=dprtr";
@@ -40,6 +67,17 @@ internal sealed class BeirutAirportFlightBoard(HttpClient http, IClock clock) : 
             }
 
             FlightBoardDto next;
+
+            if (!options.Value.Enabled)
+            {
+                // Switched off. Serve the static schedule and cache it for the
+                // live duration rather than the short fallback one - there is
+                // nothing to retry towards.
+                next = FallbackSchedule.Board(now);
+                Store(next, now + LiveFor);
+                return next;
+            }
+
             try
             {
                 var arrivals = await ReadAsync(ArrivalsPath, cancellationToken).ConfigureAwait(false);

@@ -132,6 +132,9 @@ public static class DependencyInjection
             .Bind(configuration.GetSection(OutboxOptions.SectionName));
         services.AddHostedService<OutboxProcessor>();
 
+        services.AddOptions<FlightOptions>()
+            .Bind(configuration.GetSection(FlightOptions.SectionName));
+
         services.AddHttpClient<IFlightBoard, BeirutAirportFlightBoard>(client =>
         {
             client.BaseAddress = new Uri("https://www.beirutairport.gov.lb/");
