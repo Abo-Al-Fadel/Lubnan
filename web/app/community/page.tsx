@@ -13,6 +13,7 @@ import {
   createPost,
   listPosts,
   relativeTime,
+  removeComment,
   toggleLike,
   type CommunityPost,
 } from '@/lib/community';
@@ -39,6 +40,7 @@ export default function CommunityPage() {
   const [publishing, setPublishing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [removing, setRemoving] = useState<string | null>(null);
   const [openComments, setOpenComments] = useState<Record<string, boolean>>({});
   const [reply, setReply] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<Record<string, boolean>>({});
@@ -171,6 +173,30 @@ export default function CommunityPage() {
         : tr('community.errorComment'));
     } finally {
       setBusy((s) => ({ ...s, [`c-${postId}`]: false }));
+    }
+  };
+
+  /**
+   * Remove a comment, then take it off the page.
+   *
+   * The list is rebuilt from the server's answer rather than optimistically:
+   * a delete that failed - somebody else's comment, or one already gone -
+   * would otherwise disappear from the page and come back on the next load,
+   * which reads as the site losing track of itself.
+   */
+  const onRemoveComment = async (postId: string, commentId: string) => {
+    setRemoving(commentId);
+    try {
+      await removeComment(postId, commentId);
+      setPosts((current) =>
+        current.map((p) =>
+          p.id === postId ? { ...p, comments: p.comments.filter((c) => c.id !== commentId) } : p,
+        ),
+      );
+    } catch {
+      /* The comment stays where it is, which is the truth. */
+    } finally {
+      setRemoving(null);
     }
   };
 
@@ -386,7 +412,7 @@ export default function CommunityPage() {
                     <div className="border-t border-ink-ghost px-4 py-4">
                       <ul className="flex flex-col gap-3">
                         {p.comments.map((c) => (
-                          <li key={c.id} className="flex gap-3">
+                          <li key={c.id} className="group/comment flex gap-3">
                             <Avatar name={c.author.displayName} />
                             <div className="min-w-0 flex-1">
                               <p className="text-sm text-ink">
@@ -395,6 +421,21 @@ export default function CommunityPage() {
                               </p>
                               <p className="mt-1 text-sm leading-relaxed text-ink">{c.body}</p>
                             </div>
+                            {/* Shown only to somebody who can actually use it.
+                                The server refuses anyone else regardless - this
+                                is about not offering an action that would fail,
+                                not about security. */}
+                            {me && (me.id === c.author.id || me.isAdmin) ? (
+                              <button
+                                type="button"
+                                onClick={() => void onRemoveComment(p.id, c.id)}
+                                disabled={removing === c.id}
+                                aria-label={tr('community.deleteComment')}
+                                className="tap micro h-8 shrink-0 self-start px-2 text-ink-dim opacity-0 transition-opacity duration-200 hover:text-ink focus-visible:opacity-100 disabled:opacity-40 group-hover/comment:opacity-100 [@media(hover:none)]:opacity-100"
+                              >
+                                {removing === c.id ? '…' : tr('community.delete')}
+                              </button>
+                            ) : null}
                           </li>
                         ))}
                       </ul>

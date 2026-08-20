@@ -56,6 +56,18 @@ internal sealed class ResendEmailSender(HttpClient http, IOptions<MailOptions> o
                 to = new[] { email.To },
                 subject = email.Subject,
                 text = email.Body,
+
+                // Sent as HTML *as well as* text, and that is the fix for a
+                // real complaint: the confirmation link ran straight into the
+                // sentence after it - "...OmgThe link expires in three days".
+                //
+                // The body is written with blank lines between paragraphs, and
+                // a mail client showing a text/plain part inside an HTML shell
+                // collapses those, because in HTML whitespace is not
+                // structure. Supplying the HTML part means the paragraph breaks
+                // are marked up rather than implied, and the client no longer
+                // has to guess.
+                html = Html.FromPlainText(email.Body),
             },
             cancellationToken).ConfigureAwait(false);
 

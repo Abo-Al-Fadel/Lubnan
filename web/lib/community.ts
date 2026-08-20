@@ -63,6 +63,20 @@ export function addComment(postId: string, body: string) {
   });
 }
 
+/**
+ * Delete a comment.
+ *
+ * Whether this is allowed is the server's decision, not the button's: the
+ * endpoint answers 403 for somebody else's comment and 404 for one already
+ * gone. The interface hides the control from people who cannot use it, which
+ * is courtesy - it is not the check.
+ */
+export function removeComment(postId: string, commentId: string) {
+  return api<void>(`/api/v1/community/posts/${postId}/comments/${commentId}`, {
+    method: 'DELETE',
+  });
+}
+
 export function relativeTime(iso: string, now = Date.now()): string {
   const then = new Date(iso).getTime();
   if (Number.isNaN(then)) return '';
