@@ -105,6 +105,16 @@ if (!string.IsNullOrWhiteSpace(sentryDsn))
     });
 }
 
+// Say which way it went, once, at startup.
+//
+// "Waiting for this project's first error" in Sentry is ambiguous between
+// "the DSN is not set" and "nothing has gone wrong yet", and those want
+// opposite responses. One line in the deploy log distinguishes them without
+// anybody having to break something on purpose to find out.
+Console.WriteLine(string.IsNullOrWhiteSpace(sentryDsn)
+    ? "[startup] Sentry: disabled (Sentry__Dsn is not set)"
+    : $"[startup] Sentry: enabled for {builder.Environment.EnvironmentName}");
+
 // Every failure, expected or not, leaves as RFC 7807.
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();

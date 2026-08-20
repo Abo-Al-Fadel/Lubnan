@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text.Json;
 using Lubnan.Application.Abstractions;
 using Lubnan.Application.Abstractions.Security;
@@ -92,6 +93,21 @@ internal sealed class OutboxProcessor(
         }
     }
 
+    /// <summary>
+    /// Will this ever succeed if we try again?
+    /// </summary>
+    /// <remarks>
+    /// A 4xx says the request was wrong, and repeating an identical wrong
+    /// request produces an identical refusal. The two exceptions are a timeout
+    /// and a rate limit, which say "not now" rather than "not ever".
+    /// </remarks>
+    private static bool IsPermanent(Exception exception) =>
+        exception is HttpRequestException { StatusCode: { } status }
+        && (int)status >= 400
+        && (int)status < 500
+        && status is not HttpStatusCode.RequestTimeout
+        && status is not HttpStatusCode.TooManyRequests;
+
     /// <summary>Doubling, capped. Reaches the ceiling in a handful of empty passes.</summary>
     private static TimeSpan Slower(TimeSpan current, TimeSpan ceiling)
     {
@@ -135,7 +151,20 @@ internal sealed class OutboxProcessor(
             }
             catch (Exception exception)
             {
-                message.Attempts++;
+                // A permanent rejection is retired immediately rather than
+                // retried to exhaustion.
+                //
+                // Resend answers an unusable recipient with 422 and an
+                // explanation. Retrying that eight times over several minutes
+                // produces eight identical refusals, eight log lines, and a row
+                // that looks transiently broken for as long as the attempts are
+                // still climbing. Nothing about the message will be different
+                // the eighth time.
+                //
+                // 408 and 429 are the exceptions among 4xx: a timeout and a
+                // rate limit are both "not now" rather than "not ever", and
+                // both are worth coming back to.
+                message.Attempts = IsPermanent(exception) ? _options.MaxAttempts : message.Attempts + 1;
                 message.Error = exception.Message;
                 logger.MessageFailed(exception, message.Id, message.Type);
             }
