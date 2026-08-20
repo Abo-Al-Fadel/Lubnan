@@ -78,7 +78,21 @@ public sealed class LubnanApiFactory : WebApplicationFactory<Program>, IAsyncLif
         Environment.SetEnvironmentVariable("RateLimits__ReadPermitLimit", "10000");
         Environment.SetEnvironmentVariable("RateLimits__WriteTokenLimit", "10000");
         Environment.SetEnvironmentVariable("RateLimits__WriteTokensPerPeriod", "10000");
-        Environment.SetEnvironmentVariable("Outbox__Enabled", "false");
+        // The outbox runs in tests, and it has to.
+        //
+        // It was disabled here, which left every consumer in OutboxProcessor
+        // completely uncovered - and that is exactly where a bug reached
+        // production: the reattempt notice queried a jsonb column with LIKE,
+        // PostgreSQL answered "operator does not exist: jsonb ~~ jsonb", and
+        // the suite was green throughout because nothing ever dispatched a
+        // message.
+        //
+        // A fast poll so a test does not wait two seconds per message. Mail
+        // goes to FileEmailSender, which writes to a temp directory: no
+        // provider, no network, nothing sent to a real address.
+        Environment.SetEnvironmentVariable("Outbox__Enabled", "true");
+        Environment.SetEnvironmentVariable("Outbox__PollInterval", "00:00:00.200");
+        Environment.SetEnvironmentVariable("Outbox__MaxPollInterval", "00:00:00.500");
 
         using var scope = Services.CreateScope();
 
@@ -119,6 +133,45 @@ public sealed class LubnanApiFactory : WebApplicationFactory<Program>, IAsyncLif
 
         user.ConfirmEmail(clock.UtcNow);
         await db.SaveChangesAsync().ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Wait until the outbox has nothing left to do, then report any failures.
+    /// </summary>
+    /// <remarks>
+    /// Polls rather than sleeps a fixed amount: a fixed sleep is either flaky
+    /// or slow, and usually manages both. Returns the errors rather than
+    /// asserting, so the calling test decides what counts as a failure and its
+    /// message names the actual database error.
+    /// </remarks>
+    public async Task<IReadOnlyList<string>> DrainOutboxAsync(TimeSpan? timeout = null)
+    {
+        var deadline = DateTime.UtcNow + (timeout ?? TimeSpan.FromSeconds(20));
+
+        while (DateTime.UtcNow < deadline)
+        {
+            using var scope = Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+            var outstanding = await db.Database
+                .SqlQuery<int>($"select count(*)::int as \"Value\" from outbox_messages where processed_at is null and attempts = 0")
+                .FirstAsync()
+                .ConfigureAwait(false);
+
+            if (outstanding == 0)
+            {
+                var failures = await db.Database
+                    .SqlQuery<string>($"select error as \"Value\" from outbox_messages where error is not null")
+                    .ToListAsync()
+                    .ConfigureAwait(false);
+
+                return failures;
+            }
+
+            await Task.Delay(100).ConfigureAwait(false);
+        }
+
+        return ["outbox did not drain within the timeout"];
     }
 
     /// <summary>

@@ -190,36 +190,37 @@ internal sealed class OutboxProcessor(
             var evt = JsonSerializer.Deserialize<UserRegistrationReattempted>(message.Payload, Json)
                       ?? throw new InvalidOperationException("UserRegistrationReattempted payload did not deserialise.");
 
-            var since = clock.UtcNow - User.RegistrationAttemptNotice;
-            var needle = $"\"email\":\"{evt.Email}\"";
-            var already = await db.OutboxMessages
-                .AsNoTracking()
-                .AnyAsync(
-                    m => m.Id != message.Id
-                         && m.Type == message.Type
-                         && m.ProcessedAt != null
-                         && m.ProcessedAt >= since
-                         && m.Payload.Contains(needle),
+            // No throttling here, deliberately: the domain has already done it.
+            //
+            // User.NoteRegistrationAttempt only raises this event when enough
+            // time has passed since the last one, reading the account's own
+            // event history to decide. So the event existing at all *is* the
+            // decision that a notice is due, and re-deciding here was both
+            // redundant and wrong.
+            //
+            // Wrong because of how it asked. It scanned outbox_messages for the
+            // address with a LIKE against `payload`, which is a jsonb column -
+            // PostgreSQL has no `jsonb ~~ jsonb` operator, so every reattempt
+            // notice failed with 42883 and retried until it hit MaxAttempts.
+            // Nobody whose address was already registered was ever told.
+            //
+            // The lesson is not "cast the column". It is that the throttle
+            // belonged to the aggregate that owns the history, and asking the
+            // message log to reconstruct it from JSON text was the mistake.
+            await mail.SendAsync(
+                    new OutgoingEmail(
+                        evt.Email,
+                        "Someone tried to register with this address",
+                        $"""
+                        Someone just tried to create a Lubnān account with {evt.Email}.
+
+                        If that was you, sign in instead:
+                        {auth.WebBaseUrl.TrimEnd('/')}/login
+
+                        If it was not you, you can ignore this. Nobody else can use this address to open an account.
+                        """),
                     cancellationToken)
                 .ConfigureAwait(false);
-
-            if (!already)
-            {
-                await mail.SendAsync(
-                        new OutgoingEmail(
-                            evt.Email,
-                            "Someone tried to register with this address",
-                            $"""
-                            Someone just tried to create a Lubnān account with {evt.Email}.
-
-                            If that was you, sign in instead:
-                            {auth.WebBaseUrl.TrimEnd('/')}/login
-
-                            If it was not you, you can ignore this. Nobody else can use this address to open an account.
-                            """),
-                        cancellationToken)
-                    .ConfigureAwait(false);
-            }
 
             return true;
         }
