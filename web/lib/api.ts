@@ -28,7 +28,15 @@ export async function api<T = void>(path: string, init: RequestInit = {}): Promi
     if (csrf) headers.set('X-CSRF-Token', csrf);
   }
 
-  if (init.body && !headers.has('Content-Type')) {
+  // Not for FormData, and this one is easy to get wrong.
+  //
+  // A multipart body needs a Content-Type carrying the boundary the browser
+  // generated - `multipart/form-data; boundary=----WebKitFormBoundary...` - and
+  // only the browser knows that string. Setting the header here at all means it
+  // is sent without a boundary, and the server cannot parse a body it has been
+  // told is multipart but given no delimiter for. Leaving it unset is what lets
+  // fetch fill it in correctly.
+  if (init.body && !(init.body instanceof FormData) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
   if (!headers.has('Accept')) headers.set('Accept', 'application/json');

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Lubnan.Application.Abstractions;
 using Lubnan.Application.Abstractions.Http;
 using Lubnan.Application.Abstractions.Messaging;
@@ -14,6 +15,14 @@ public sealed record Query : IQuery<Result<Me>>;
 /// <summary>
 /// What the profile page needs. Nothing more.
 /// </summary>
+/// <param name="AvatarVersion">
+/// Null when there is no picture; otherwise the version that goes in its URL.
+/// Carried here rather than discovered with a HEAD request against the avatar
+/// route: that probe answered 404 for everybody who has not set one — most
+/// people — so every profile visit logged a failed request in the console and
+/// spent a round trip learning nothing. The account payload already describes
+/// the account, and this is part of it.
+/// </param>
 /// <param name="PendingDeletionUntil">
 /// Set while the account is in its grace period, so the frontend can show the
 /// banner that offers to cancel. It is the only way somebody who did not
@@ -28,7 +37,8 @@ public sealed record Me(
     string State,
     DateTimeOffset CreatedAt,
     DateTimeOffset? PendingDeletionUntil,
-    int ActiveSessions);
+    int ActiveSessions,
+    string? AvatarVersion);
 
 internal sealed class Handler(IAppDbContext db, ICurrentUser currentUser, IClock clock)
     : IQueryHandler<Query, Result<Me>>
@@ -54,7 +64,11 @@ internal sealed class Handler(IAppDbContext db, ICurrentUser currentUser, IClock
                 u.State.ToString(),
                 u.CreatedAt,
                 u.PurgeAfter,
-                u.Sessions.Count(s => s.EndedAt == null && s.ExpiresAt > now)))
+                u.Sessions.Count(s => s.EndedAt == null && s.ExpiresAt > now),
+                db.Avatars
+                    .Where(a => a.UserId == u.Id)
+                    .Select(a => a.UpdatedAt.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture))
+                    .FirstOrDefault()))
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 

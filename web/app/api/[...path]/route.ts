@@ -112,14 +112,32 @@ async function proxy(req: Request, path: string[]) {
   headers.set('x-forwarded-host', incoming.host);
 
   const method = req.method.toUpperCase();
-  const body = method === 'GET' || method === 'HEAD' ? undefined : await req.arrayBuffer();
+
+  /*
+   * The body is streamed, not buffered.
+   *
+   * `await req.arrayBuffer()` looked equivalent and is not: it materialises the
+   * body and hands fetch a fresh ArrayBuffer, and somewhere in that round trip
+   * a multipart payload stopped matching the boundary in its own Content-Type
+   * header. The symptom was a JPEG that uploaded perfectly straight to the API
+   * and was rejected as "not an image we can read" through this proxy — same
+   * file, same headers, different bytes.
+   *
+   * Passing `req.body` through sends the original octets untouched, which is
+   * what a proxy is supposed to do. `duplex: 'half'` is required by the fetch
+   * specification whenever the body is a stream; without it Node throws.
+   */
+  const hasBody = method !== 'GET' && method !== 'HEAD';
 
   let upstream: Response;
   try {
     upstream = await fetch(target, {
       method,
       headers,
-      body,
+      body: hasBody ? req.body : undefined,
+      // @ts-expect-error - duplex is required for a streamed body and is not
+      // yet in the DOM RequestInit types Next ships.
+      duplex: 'half',
       redirect: 'manual',
       signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     });

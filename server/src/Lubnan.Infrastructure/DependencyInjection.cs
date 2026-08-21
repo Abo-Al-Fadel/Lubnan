@@ -85,6 +85,7 @@ public static class DependencyInjection
         services.AddSingleton<ITokenFactory, TokenFactory>();
         services.AddSingleton<IIpHasher, IpHasher>();
         services.AddSingleton<IEmailTombstoner, EmailTombstoner>();
+        services.AddSingleton<IImageSanitiser, ImageSanitiser>();
 
         // Mail: the provider is a configuration value, not a code change.
         //

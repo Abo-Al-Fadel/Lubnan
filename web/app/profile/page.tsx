@@ -6,7 +6,8 @@ import { PhotoField } from '@/components/ui/PhotoField';
 import { LebanonMap } from '@/components/ui/LebanonMap';
 import { Counter } from '@/components/ui/Counter';
 import { useSite } from '@/lib/site-state';
-import { useAuth } from '@/lib/auth';
+import { removeAvatar, setAvatar, useAuth } from '@/lib/auth';
+import { ApiError } from '@/lib/api';
 import { useCatalog } from '@/lib/catalog';
 import { listPosts, relativeTime, type CommunityPost } from '@/lib/community';
 import { listSaved, unpinSaved } from '@/lib/saved';
@@ -27,6 +28,51 @@ export default function ProfilePage() {
   const [saved, setSaved] = useState<string[]>([]);
   const [mine, setMine] = useState<CommunityPost[]>([]);
   const [tab, setTab] = useState<'places' | 'trips' | 'posts'>('places');
+
+  /**
+   * Avatar state.
+   *
+   * `avatarVersion` doubles as "has one": null means initials. It is seeded
+   * with a HEAD probe rather than carried on /me, so the account payload stays
+   * about the account.
+   */
+  const [avatarVersion, setAvatarVersion] = useState<string | null>(null);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+
+  // Seeded from /me, which already knows. No probe, so a profile with no
+  // picture no longer logs a 404 on every visit.
+  useEffect(() => {
+    setAvatarVersion(me?.avatarVersion ?? null);
+  }, [me]);
+
+  const onPickAvatar = async (file: File) => {
+    setAvatarBusy(true);
+    setAvatarError(null);
+    try {
+      setAvatarVersion(await setAvatar(file));
+    } catch (err) {
+      // The server's sentence, not a generic one: it says whether the file was
+      // too large, the wrong kind, or too many pixels, and each has a different
+      // thing to do about it.
+      setAvatarError(err instanceof ApiError ? err.message : tr('profile.avatarFailed'));
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
+  const onRemoveAvatar = async () => {
+    setAvatarBusy(true);
+    setAvatarError(null);
+    try {
+      await removeAvatar();
+      setAvatarVersion(null);
+    } catch {
+      setAvatarError(tr('profile.avatarFailed'));
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
 
   useEffect(() => {
     if (!me) {
@@ -101,6 +147,64 @@ export default function ProfilePage() {
             <header className="grid gap-8 border-b border-ink-ghost pb-12 md:grid-cols-12 md:gap-12">
               <div className="md:col-span-7">
                 <p className="micro text-ink-dim">{tr('profile.eyebrow')}</p>
+
+                <div className="mt-5 flex items-center gap-4">
+                  {/* The version in the query string is what makes a new
+                      picture appear. The image is served immutable for a year,
+                      so without it the browser would keep showing the old one
+                      until the cache expired. */}
+                  <span className="relative block h-20 w-20 shrink-0 overflow-hidden rounded-full bg-band">
+                    {avatarVersion ? (
+                      <img
+                        src={`/api/v1/users/${me.id}/avatar?v=${avatarVersion}`}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-full w-full items-center justify-center font-display text-2xl uppercase text-ink-dim">
+                        {me.displayName.trim().charAt(0)}
+                      </span>
+                    )}
+                  </span>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="tap micro cursor-pointer text-ink underline decoration-ink-ghost underline-offset-4 hover:decoration-ink">
+                      {avatarBusy ? tr('profile.avatarWorking') : tr('profile.avatarChange')}
+                      <input
+                        type="file"
+                        // A hint for the file picker, not a check. The server
+                        // decodes and re-encodes whatever arrives, which is
+                        // what actually decides.
+                        accept="image/png,image/jpeg,image/webp"
+                        className="sr-only"
+                        disabled={avatarBusy}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          e.target.value = '';
+                          if (file) void onPickAvatar(file);
+                        }}
+                      />
+                    </label>
+
+                    {avatarVersion ? (
+                      <button
+                        type="button"
+                        onClick={() => void onRemoveAvatar()}
+                        disabled={avatarBusy}
+                        className="tap micro self-start text-ink-dim hover:text-ink disabled:opacity-40"
+                      >
+                        {tr('profile.avatarRemove')}
+                      </button>
+                    ) : null}
+
+                    {avatarError ? (
+                      <p role="alert" className="micro max-w-[28ch] leading-[1.6] text-status-warn">
+                        {avatarError}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+
                 <h1 className="mt-4 font-display text-[clamp(2.25rem,6vw,4rem)] font-bold uppercase leading-[0.92] tracking-[-0.02em] text-ink">
                   {me.displayName}
                 </h1>

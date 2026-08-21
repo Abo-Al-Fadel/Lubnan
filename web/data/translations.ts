@@ -262,6 +262,10 @@ export const t: Record<Locale, Dict> = {
     'confirm.signIn': 'Sign in',
 
     'profile.eyebrow': 'Your Lebanon',
+    'profile.avatarChange': 'Change picture',
+    'profile.avatarRemove': 'Remove',
+    'profile.avatarWorking': 'Uploading…',
+    'profile.avatarFailed': 'That picture could not be saved.',
     'profile.bio':
       'Saving the north first. Took the long path down from Bsharri in three hours and would do it again.',
     'profile.statSaved': 'places saved',
@@ -602,6 +606,10 @@ export const t: Record<Locale, Dict> = {
     'confirm.signIn': 'Se connecter',
 
     'profile.eyebrow': 'Votre Liban',
+    'profile.avatarChange': 'Changer la photo',
+    'profile.avatarRemove': 'Retirer',
+    'profile.avatarWorking': 'Envoi…',
+    'profile.avatarFailed': 'Cette photo n’a pas pu être enregistrée.',
     'profile.bio':
       'Le nord d’abord. Descente de Bcharré par le long sentier en trois heures, et je recommencerais.',
     'profile.statSaved': 'lieux enregistrés',
@@ -942,6 +950,10 @@ export const t: Record<Locale, Dict> = {
     'confirm.signIn': 'تسجيل الدخول',
 
     'profile.eyebrow': 'لبنانك',
+    'profile.avatarChange': 'تغيير الصورة',
+    'profile.avatarRemove': 'إزالة',
+    'profile.avatarWorking': 'جارٍ الرفع…',
+    'profile.avatarFailed': 'تعذّر حفظ هذه الصورة.',
     'profile.bio':
       'الشمال أوّلاً. نزلتُ الدرب الطويل من بشرّي في ثلاث ساعات، وسأكرّرها.',
     'profile.statSaved': 'أماكن محفوظة',

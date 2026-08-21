@@ -323,4 +323,5 @@ public sealed record MeDto(
     string State,
     DateTimeOffset CreatedAt,
     DateTimeOffset? PendingDeletionUntil,
-    int ActiveSessions);
+    int ActiveSessions,
+    string? AvatarVersion);

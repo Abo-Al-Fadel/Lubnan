@@ -38,6 +38,24 @@
     <PackageVersion Include="Microsoft.Extensions.Http" Version="9.0.8" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.8" />
   </ItemGroup>
+  <ItemGroup Label="Media">
+    <!--
+      3.1.12, and the version is pinned between two hard constraints.
+
+      Not 3.1.5: NU1903 reports a known high-severity advisory against it, and
+      this repository treats warnings as errors in CI. The build refused it
+      outright, which is the mechanism working on the first package added for
+      image handling.
+
+      Not 4.x either. From 4.0 onward ImageSharp requires a Six Labors licence
+      key *at build time* - no key, no compile, regardless of how the software
+      is used. That turns a free dependency into a purchasing decision, and it
+      would fail every clone and every CI run until somebody bought one.
+
+      3.1.12 is the last release that is both patched and Apache-2.0.
+    -->
+    <PackageVersion Include="SixLabors.ImageSharp" Version="3.1.12" />
+  </ItemGroup>
   <ItemGroup Label="Observability">
     <PackageVersion Include="Sentry.AspNetCore" Version="5.0.0" />
   </ItemGroup>

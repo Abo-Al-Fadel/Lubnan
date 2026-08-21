@@ -401,11 +401,16 @@ export default function CommunityPage() {
                       label={tr('community.comment')}
                       icon={<CommentIcon />}
                     />
-                    <Action
-                      onClick={() => void onShare(p.id)}
-                      label={tr('community.share')}
-                      icon={<ShareIcon />}
-                    />
+                    {/* Share is not rendered.
+                        It copied a permalink to the clipboard and said nothing
+                        about having done so, which on a phone is
+                        indistinguishable from a button that does nothing — and
+                        a control that appears broken is worse than one that is
+                        absent. Removed rather than fixed because a share worth
+                        having is a share sheet on mobile and a confirmation on
+                        desktop, and that is a piece of work rather than a
+                        tweak. onShare and ShareIcon are kept below so bringing
+                        it back is adding the feedback, not rebuilding it. */}
                   </div>
 
                   {commentsOpen ? (
@@ -431,7 +436,20 @@ export default function CommunityPage() {
                                 onClick={() => void onRemoveComment(p.id, c.id)}
                                 disabled={removing === c.id}
                                 aria-label={tr('community.deleteComment')}
-                                className="tap micro h-8 shrink-0 self-start px-2 text-ink-dim opacity-0 transition-opacity duration-200 hover:text-ink focus-visible:opacity-100 disabled:opacity-40 group-hover/comment:opacity-100 [@media(hover:none)]:opacity-100"
+                                /* Always visible, quietly.
+                                   It was opacity-0 until the comment was
+                                   hovered, which is a pattern borrowed from
+                                   desktop mail clients and wrong here: the
+                                   control was invisible until you happened to
+                                   pass the mouse over the right row, absent
+                                   entirely on a touch screen, and unreachable
+                                   for anyone who does not use a mouse.
+                                   Playwright refused to click it without
+                                   force, which is the same complaint stated
+                                   precisely. Low contrast until hovered is
+                                   enough deference for a destructive action
+                                   that is already confirmed by the server. */
+                                className="tap micro h-8 shrink-0 self-start px-2 text-ink-ghost transition-colors duration-200 hover:text-ink focus-visible:text-ink disabled:opacity-40"
                               >
                                 {removing === c.id ? '…' : tr('community.delete')}
                               </button>

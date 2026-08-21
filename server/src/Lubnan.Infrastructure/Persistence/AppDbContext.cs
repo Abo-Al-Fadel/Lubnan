@@ -25,6 +25,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<User> Users => Set<User>();
 
+    public DbSet<Avatar> Avatars => Set<Avatar>();
+
     public DbSet<CommunityPost> CommunityPosts => Set<CommunityPost>();
 
     public DbSet<SavedPlace> SavedPlaces => Set<SavedPlace>();

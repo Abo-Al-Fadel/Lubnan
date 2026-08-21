@@ -30,6 +30,16 @@ public interface IAppDbContext
 
     DbSet<User> Users { get; }
 
+    /// <summary>
+    /// Profile pictures, separate from <see cref="User"/> on purpose.
+    /// </summary>
+    /// <remarks>
+    /// A blob on the user row would be loaded by every query that touches a
+    /// user - including the sign-in path, which reads one to check a password.
+    /// Its own table means nothing pays for an image it did not ask for.
+    /// </remarks>
+    DbSet<Avatar> Avatars { get; }
+
     DbSet<CommunityPost> CommunityPosts { get; }
 
     DbSet<SavedPlace> SavedPlaces { get; }

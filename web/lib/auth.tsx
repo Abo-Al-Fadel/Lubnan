@@ -13,6 +13,7 @@ export type Me = {
   createdAt: string;
   pendingDeletionUntil: string | null;
   activeSessions: number;
+  avatarVersion: string | null;
 };
 
 type AuthCtx = {
@@ -81,6 +82,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(() => ({ me, ready, refresh, logout }), [me, ready, refresh, logout]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+/**
+ * Upload a profile picture.
+ *
+ * multipart/form-data, and the Content-Type header is deliberately not set:
+ * the browser has to write it itself so that it can append the boundary it
+ * generated. Setting it by hand produces a header with no boundary and a body
+ * the server cannot parse.
+ *
+ * Returns the new version string, which goes in the image URL so the browser
+ * fetches the new picture instead of the cached old one.
+ */
+export async function setAvatar(file: File): Promise<string> {
+  const form = new FormData();
+  form.append('file', file);
+
+  const result = await api<{ version: string }>('/api/v1/me/avatar', {
+    method: 'POST',
+    body: form,
+  });
+
+  return result.version;
+}
+
+export function removeAvatar() {
+  return api<void>('/api/v1/me/avatar', { method: 'DELETE' });
 }
 
 export function useAuth() {
