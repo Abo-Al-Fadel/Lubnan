@@ -8,6 +8,7 @@ import { Wordmark } from '@/components/ui/Wordmark';
 import { useSite } from '@/lib/site-state';
 import { useAuth } from '@/lib/auth';
 import { api, ApiError } from '@/lib/api';
+import { safeReturnTo } from '@/lib/return-to';
 
 /**
  * ridge-quiet-half-composition: the form takes one half against a flat ground,
@@ -76,7 +77,12 @@ export default function LoginPage() {
                         body: JSON.stringify({ email, password }),
                       });
                       await refresh();
-                      router.push('/profile');
+
+                      // Read here rather than with useSearchParams: that hook
+                      // forces this page under a Suspense boundary at build
+                      // time, and the value is only ever needed at this one
+                      // moment. safeReturnTo refuses anything off-origin.
+                      router.push(safeReturnTo(window.location.search));
                     }
                   } catch (err) {
                     if (err instanceof ApiError && err.code === 'network') {

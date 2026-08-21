@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { PhotoField } from '@/components/ui/PhotoField';
 import { Crosshair, Heart } from '@/components/ui/Subjects';
 import { Reveal } from '@/components/ui/Reveal';
@@ -8,6 +9,7 @@ import { Counter } from '@/components/ui/Counter';
 import { useAuth } from '@/lib/auth';
 import { useCatalog } from '@/lib/catalog';
 import { listPosts, toggleLike, type CommunityPost } from '@/lib/community';
+import { loginHref } from '@/lib/return-to';
 import { ApiError } from '@/lib/api';
 import { useSite } from '@/lib/site-state';
 import secrets from '@/data/secrets.json';
@@ -464,6 +466,7 @@ export function SecretsList({ showSlots }: Slots) {
 export function CommunityStrip({ showSlots }: Slots) {
   const { tr } = useSite();
   const { me } = useAuth();
+  const router = useRouter();
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState<Record<string, boolean>>({});
@@ -485,9 +488,12 @@ export function CommunityStrip({ showSlots }: Slots) {
     };
   }, [me]);
 
+  // router.push, not window.location. A full document load throws away the
+  // client-side state and re-downloads the page to reach a route Next already
+  // has, and it loses the post they were on. loginHref carries that back.
   const onLike = async (post: CommunityPost) => {
     if (!me) {
-      window.location.href = '/login';
+      router.push(loginHref(`/community#${post.id}`));
       return;
     }
     if (busy[post.id]) return;
@@ -513,7 +519,7 @@ export function CommunityStrip({ showSlots }: Slots) {
     } catch (err) {
       setPosts((list) => list.map((p) => (p.id === post.id ? post : p)));
       if (err instanceof ApiError && err.status === 401) {
-        window.location.href = '/login';
+        router.push(loginHref(`/community#${post.id}`));
       }
     } finally {
       setBusy((s) => ({ ...s, [post.id]: false }));

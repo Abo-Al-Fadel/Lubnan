@@ -16,9 +16,22 @@ export type Me = {
   avatarVersion: string | null;
 };
 
+/**
+ * Why "unavailable" is not the same as signed out.
+ *
+ * Every failure used to collapse to `me: null`, so a 500 from /me rendered the
+ * signed-out page to somebody holding a valid session. That is exactly what a
+ * missing migration produced: the account endpoint threw, the profile showed
+ * the guest wall, and the bug read as "login is broken" when login had worked
+ * perfectly. A server that is unreachable or broken has told us nothing about
+ * who is signed in, and the interface should say so rather than guess.
+ */
+export type AuthProblem = 'none' | 'unavailable';
+
 type AuthCtx = {
   me: Me | null;
   ready: boolean;
+  problem: AuthProblem;
   refresh: () => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -28,6 +41,7 @@ const AuthContext = createContext<AuthCtx | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [me, setMe] = useState<Me | null>(null);
   const [ready, setReady] = useState(false);
+  const [problem, setProblem] = useState<AuthProblem>('none');
 
   const refresh = useCallback(async () => {
     /*
@@ -48,19 +62,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
      */
     if (!document.cookie.split('; ').some((c) => c.startsWith('lubnan_csrf='))) {
       setMe(null);
+      setProblem('none');
       setReady(true);
       return;
     }
 
     try {
-      const next = await api<Me>('/api/v1/me');
-      setMe(next);
+      setMe(await api<Me>('/api/v1/me'));
+      setProblem('none');
     } catch (err) {
-      if (err instanceof ApiError && (err.status === 401 || err.status === 0 || err.status === 502)) {
-        setMe(null);
-      } else {
-        setMe(null);
-      }
+      setMe(null);
+
+      // 401 is an answer: the session is over, and the signed-out page is
+      // correct. Anything else - no network, a 5xx, a proxy timeout - is the
+      // absence of an answer, and must not be dressed up as one.
+      const answered = err instanceof ApiError && err.status === 401;
+      setProblem(answered ? 'none' : 'unavailable');
     } finally {
       setReady(true);
     }
@@ -77,9 +94,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       /* Clearing local state is the outcome the person asked for. */
     }
     setMe(null);
+    setProblem('none');
   }, []);
 
-  const value = useMemo(() => ({ me, ready, refresh, logout }), [me, ready, refresh, logout]);
+  const value = useMemo(
+    () => ({ me, ready, problem, refresh, logout }),
+    [me, ready, problem, refresh, logout],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

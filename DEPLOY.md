@@ -148,9 +148,36 @@ over Cloud Run, and it is the right one for a portfolio: Render's ceiling is
 fixed, so a traffic spike — friendly or hostile — degrades the site instead of
 generating an invoice.
 
-### Run the migrations
+### Migrations
 
-Render's free tier has no shell, so run them from your machine against Neon:
+**The API applies them itself on boot**, because `Database__MigrateOnStartup` is
+`true` in `render.yaml`. It logs what it did:
+
+```
+[startup] Schema: applying 1 migration(s): 20260820165125_Avatars
+[startup] Schema: applied.
+```
+
+That reverses an earlier decision in this file, and the reason is a failure that
+already happened. The avatars migration was committed, the image deployed, the
+health check passed and the deploy went green — against a database that had
+never seen it. Every call to `/api/v1/me` then threw `42P01: relation
+"user_avatars" does not exist`, the frontend read the 500 as "not signed in",
+and the bug presented itself as broken authentication. Nothing in the pipeline
+lied; nothing in it checked, either.
+
+The original objection — replicas racing on the same schema — does not apply to
+one free instance with no shell to run `dotnet ef` from. **When this grows past
+one instance, move it to a release step and set the flag back to `false`.**
+
+If the database is asleep (Neon suspends on the free tier), it retries five
+times over about thirty seconds before giving up. If it does give up the process
+exits, the health check never passes, and Render keeps the previous deploy
+serving — which is the correct outcome, and the opposite of what happened above.
+
+### Running them by hand
+
+Still worth knowing, and the only way to **seed**:
 
 ```bash
 cd server
@@ -171,8 +198,8 @@ dotnet ef database update --project src/Lubnan.Infrastructure --startup-project 
 dotnet run --project src/Lubnan.Api -- seed
 ```
 
-This stays a manual deploy step on purpose. Migrating at startup means two
-replicas racing each other on the same schema.
+Seeding stays manual on purpose: a seeder that runs automatically eventually
+runs somewhere it was not meant to.
 
 ---
 

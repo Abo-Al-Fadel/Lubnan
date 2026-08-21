@@ -10,6 +10,7 @@ using Lubnan.Infrastructure.Persistence.Seed;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Scalar.AspNetCore;
 
@@ -231,6 +232,81 @@ builder.Services.AddOutputCache(options => options.AddPolicy("places", policy =>
     .SetVaryByHeader("Accept-Language")));
 
 var app = builder.Build();
+
+/*
+ * Bring the schema up to date before serving anything.
+ *
+ * This is opt-in per environment (`Database__MigrateOnStartup`) and it is on
+ * for Render, where there is no shell to run `dotnet ef` from and exactly one
+ * instance to race with.
+ *
+ * It exists because of a failure worth naming. A migration adding the avatars
+ * table was committed, the image deployed, the health check passed, and the
+ * deploy was reported green - against a database that had never seen the
+ * migration. Every call to /api/v1/me then threw 42P01 "relation does not
+ * exist", the frontend read the 500 as "not signed in", and the bug presented
+ * as broken authentication. Nothing in the pipeline had lied; nothing in it had
+ * checked either.
+ *
+ * Failing here is the point. A container that cannot reach the schema it was
+ * built against refuses to start, the health check never passes, and Render
+ * keeps the previous deploy serving - which is the correct outcome, and the
+ * opposite of what happened.
+ *
+ * Two things this does NOT make safe, stated so nobody assumes otherwise:
+ * several replicas starting at once will race (EF takes no distributed lock),
+ * and a destructive migration still deletes data on the way up. Both are
+ * arguments for a release step once this outgrows one free instance.
+ */
+if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
+{
+    /*
+     * Retried, because "the database is asleep" and "the database is gone" look
+     * identical for the first few seconds.
+     *
+     * Neon's free tier suspends after inactivity and takes several seconds to
+     * accept the first connection. A deploy that happens to land in that window
+     * would fail to connect, throw, and take the container down - and Render
+     * would restart it into the same window. A crash loop caused by a database
+     * that was about to be fine.
+     *
+     * Five attempts over roughly half a minute covers a Neon wake-up with room
+     * to spare. After that it really is a failure and the process should die:
+     * serving traffic against a schema we could not verify is the thing this
+     * block exists to prevent.
+     */
+    const int attempts = 5;
+
+    for (var attempt = 1; ; attempt++)
+    {
+        try
+        {
+            using var scope = app.Services.CreateScope();
+            var database = scope.ServiceProvider.GetRequiredService<AppDbContext>().Database;
+
+            var pending = (await database.GetPendingMigrationsAsync().ConfigureAwait(false)).ToArray();
+
+            if (pending.Length == 0)
+            {
+                Console.WriteLine("[startup] Schema: up to date.");
+            }
+            else
+            {
+                Console.WriteLine($"[startup] Schema: applying {pending.Length} migration(s): {string.Join(", ", pending)}");
+                await database.MigrateAsync().ConfigureAwait(false);
+                Console.WriteLine("[startup] Schema: applied.");
+            }
+
+            break;
+        }
+        catch (Exception ex) when (attempt < attempts && ex is not OperationCanceledException)
+        {
+            var wait = TimeSpan.FromSeconds(2 * attempt);
+            Console.WriteLine($"[startup] Schema: attempt {attempt}/{attempts} failed ({ex.GetType().Name}: {ex.Message}). Retrying in {wait.TotalSeconds:0}s.");
+            await Task.Delay(wait).ConfigureAwait(false);
+        }
+    }
+}
 
 // Seeding is a command, not a startup step. Two replicas starting together
 // would race, and a seeder that runs automatically eventually runs somewhere

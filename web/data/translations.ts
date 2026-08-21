@@ -266,6 +266,8 @@ export const t: Record<Locale, Dict> = {
     'profile.avatarRemove': 'Remove',
     'profile.avatarWorking': 'Uploading…',
     'profile.avatarFailed': 'That picture could not be saved.',
+    'profile.unavailable': 'We could not reach your account just now. You are still signed in — this is our side, not yours.',
+    'profile.retry': 'Try again',
     'profile.bio':
       'Saving the north first. Took the long path down from Bsharri in three hours and would do it again.',
     'profile.statSaved': 'places saved',
@@ -610,6 +612,8 @@ export const t: Record<Locale, Dict> = {
     'profile.avatarRemove': 'Retirer',
     'profile.avatarWorking': 'Envoi…',
     'profile.avatarFailed': 'Cette photo n’a pas pu être enregistrée.',
+    'profile.unavailable': 'Votre compte est injoignable pour l’instant. Vous êtes toujours connecté — le problème vient de nous.',
+    'profile.retry': 'Réessayer',
     'profile.bio':
       'Le nord d’abord. Descente de Bcharré par le long sentier en trois heures, et je recommencerais.',
     'profile.statSaved': 'lieux enregistrés',
@@ -954,6 +958,8 @@ export const t: Record<Locale, Dict> = {
     'profile.avatarRemove': 'إزالة',
     'profile.avatarWorking': 'جارٍ الرفع…',
     'profile.avatarFailed': 'تعذّر حفظ هذه الصورة.',
+    'profile.unavailable': 'تعذّر الوصول إلى حسابك الآن. لا تزال مسجّلاً — الخلل من طرفنا.',
+    'profile.retry': 'أعد المحاولة',
     'profile.bio':
       'الشمال أوّلاً. نزلتُ الدرب الطويل من بشرّي في ثلاث ساعات، وسأكرّرها.',
     'profile.statSaved': 'أماكن محفوظة',

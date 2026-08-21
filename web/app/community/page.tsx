@@ -2,12 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Navbar, SiteFooter } from '@/components/sections/Chrome';
 import { PhotoField } from '@/components/ui/PhotoField';
 import { Heart } from '@/components/ui/Subjects';
 import { useSite } from '@/lib/site-state';
 import { useAuth } from '@/lib/auth';
 import { ApiError } from '@/lib/api';
+import { loginHref } from '@/lib/return-to';
 import {
   addComment,
   createPost,
@@ -29,8 +31,9 @@ import { REGIONS, useCatalog } from '@/lib/catalog';
 
 export default function CommunityPage() {
   const { tr } = useSite();
-  const { me, ready } = useAuth();
+  const { me, ready, problem } = useAuth();
   const { places } = useCatalog();
+  const router = useRouter();
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -91,6 +94,18 @@ export default function CommunityPage() {
     setNotice(tr('community.signInToAct'));
   };
 
+  /**
+   * Send a guest to sign in, and bring them back to the post they were on.
+   *
+   * Used for liking and not for posting or commenting, and the difference is
+   * the draft. A like is one tap with nothing to lose, so a notice is easy to
+   * miss and navigating costs nothing. A half-written comment is work, and
+   * navigating away throws it in the bin - so those keep the notice.
+   */
+  const signInFor = (postId: string) => {
+    router.push(loginHref(`/community#${postId}`));
+  };
+
   const onPublish = async () => {
     if (!me) {
       needSignIn();
@@ -116,7 +131,15 @@ export default function CommunityPage() {
 
   const onLike = async (post: CommunityPost) => {
     if (!me) {
-      needSignIn();
+      // Only when we actually know they are signed out. If /me failed rather
+      // than answered, sending them to a sign-in form they may not need - and
+      // which is served by the same API that just failed - is a dead end
+      // dressed up as an instruction.
+      if (problem === 'unavailable') {
+        setNotice(tr('community.errorLoad'));
+        return;
+      }
+      signInFor(post.id);
       return;
     }
     if (busy[post.id]) return;
@@ -143,9 +166,14 @@ export default function CommunityPage() {
       setPosts((list) =>
         list.map((p) => (p.id === post.id ? post : p)),
       );
-      setNotice(err instanceof ApiError && err.status === 401
-        ? tr('community.signInToAct')
-        : tr('community.errorLike'));
+
+      // A 401 that survived the silent refresh means the session really is
+      // over, whatever this page still believes about `me`.
+      if (err instanceof ApiError && err.status === 401) {
+        signInFor(post.id);
+      } else {
+        setNotice(tr('community.errorLike'));
+      }
     } finally {
       setBusy((s) => ({ ...s, [post.id]: false }));
     }

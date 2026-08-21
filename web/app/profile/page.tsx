@@ -23,7 +23,7 @@ import { listSaved, unpinSaved } from '@/lib/saved';
 
 export default function ProfilePage() {
   const { tr } = useSite();
-  const { me, ready } = useAuth();
+  const { me, ready, problem, refresh } = useAuth();
   const { places } = useCatalog();
   const [saved, setSaved] = useState<string[]>([]);
   const [mine, setMine] = useState<CommunityPost[]>([]);
@@ -126,6 +126,23 @@ export default function ProfilePage() {
           <p className="micro text-ink-dim" role="status">
             {tr('login.pending')}
           </p>
+        ) : !me && problem === 'unavailable' ? (
+          /* Not the guest wall. Telling somebody with a valid session that
+             they are signed out - because /me returned 500 - sends them to
+             re-enter a password that was never the problem. */
+          <header className="max-w-xl border-b border-ink-ghost pb-12">
+            <p className="micro text-ink-dim">{tr('profile.eyebrow')}</p>
+            <p className="mt-5 max-w-[42ch] text-sm leading-relaxed text-ink-dim" role="alert">
+              {tr('profile.unavailable')}
+            </p>
+            <button
+              type="button"
+              onClick={() => void refresh()}
+              className="btn-solid mt-8 inline-flex rounded-full px-8 py-4 text-sm font-semibold"
+            >
+              {tr('profile.retry')}
+            </button>
+          </header>
         ) : !me ? (
           <header className="max-w-xl border-b border-ink-ghost pb-12">
             <p className="micro text-ink-dim">{tr('profile.eyebrow')}</p>

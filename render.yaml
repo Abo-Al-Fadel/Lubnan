@@ -70,6 +70,16 @@ services:
       # sync: false means "prompt me, and never store it in git".
       - key: ConnectionStrings__Database
         sync: false            # Neon pooled connection string
+
+      # Apply pending migrations on boot.
+      #
+      # True here specifically because Render's free plan gives no shell and
+      # runs one instance: there is nowhere to run `dotnet ef database update`
+      # from, and nothing to race with. Without it a deploy can go green while
+      # the code and the schema disagree - which is how the avatars table came
+      # to be missing in production while every check reported success.
+      - key: Database__MigrateOnStartup
+        value: "true"
       - key: Auth__SigningKey
         sync: false            # openssl rand -base64 48
       - key: Auth__HashKey
