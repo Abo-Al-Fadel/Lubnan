@@ -20,6 +20,12 @@ using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Every required setting, checked together, before anything tries to use one.
+// An empty environment variable is treated as a missing one - which the check
+// this replaced did not do, so a blank connection string reached Npgsql and
+// came back as "The value cannot be an empty string (Parameter 'value')".
+SettingsPreflight.ThrowIfIncomplete(builder.Configuration, builder.Environment);
+
 var configuredConnection = builder.Configuration.GetConnectionString("Database")
     ?? throw new InvalidOperationException(
         "ConnectionStrings:Database is not configured. Set it in user secrets, or as ConnectionStrings__Database.");
