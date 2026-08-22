@@ -105,6 +105,19 @@ and horizontal overflow. Its first run found 239 problems.
 
 ## Known gaps
 
+- **Password reset exists on the server and has no front end.** The API half is
+  finished and correct — `POST /api/v1/auth/forgot-password` and
+  `/api/v1/auth/reset-password`, single-use hashed tokens, one-hour expiry, and
+  every session ended on success. What is missing is entirely on this side: no
+  `/reset-password` page, and no "forgot password?" link on `/login`. So nobody
+  can enter the flow through the site, and anyone who called the endpoint
+  directly would be mailed a link to a 404. `app/robots.ts` already disallows
+  `/reset-password`, which is where the intent is recorded.
+  Finishing it means a page that reads `?token=`, posts it with a new password,
+  and handles `token.invalid` and `password.breached`; a link on `/login`; and
+  translation keys in all three of `en`/`fr`/`ar`, since a half-translated
+  account page is worse than none. Until then the endpoints are reachable but
+  unreferenced.
 - `/people` deliberately shows each person's **work** rather than a generated
   portrait. Inventing a likeness of a real, named, often living person and
   presenting it as photography is not something this project does. Six entries
