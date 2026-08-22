@@ -27,6 +27,51 @@ internal sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> log
         var correlationId = httpContext.Items[CorrelationIdMiddleware.ItemKey] as string
                             ?? httpContext.TraceIdentifier;
 
+        /*
+         * A body the framework could not read is the caller's mistake, and it
+         * has to leave as one.
+         *
+         * Minimal APIs raise BadHttpRequestException when a JSON body will not
+         * parse or a field arrives as the wrong type, and that exception
+         * already carries the status it wants — 400. Handling every exception
+         * identically overrode it with 500, so `{"email": 12345}` came back as
+         * "Something went wrong on our side": the client was told to retry
+         * something that will never succeed, and the server logged its own
+         * fault for somebody else's typo.
+         *
+         * The cost was not only cosmetic. Every scanner and every mistyped
+         * curl became an Error-level log line and a Sentry event, which is the
+         * noise a real 500 has to be found underneath. The Sentry filter in
+         * Program.cs suppresses exactly this exception type — evidence the
+         * symptom was noticed there while the status stayed wrong here.
+         *
+         * The message is still not forwarded. It names the parameter and the
+         * DTO ("Failed to read parameter \"LoginRequest body\"…"), which is
+         * internal shape the caller has no business learning.
+         */
+        if (exception is BadHttpRequestException malformed)
+        {
+            logger.Malformed(httpContext.Request.Method, httpContext.Request.Path, correlationId);
+
+            await WriteAsync(
+                httpContext,
+                new ProblemDetails
+                {
+                    Type = "https://lubnan.app/errors/validation",
+                    Title = "That request could not be read.",
+                    Status = malformed.StatusCode,
+                    Instance = $"{httpContext.Request.Method} {httpContext.Request.Path}",
+                    Extensions =
+                    {
+                        ["code"] = "request.malformed",
+                        ["correlationId"] = correlationId,
+                    },
+                },
+                cancellationToken).ConfigureAwait(false);
+
+            return true;
+        }
+
         logger.Unhandled(exception, httpContext.Request.Method, httpContext.Request.Path, correlationId);
 
         var problem = new ProblemDetails
@@ -43,10 +88,16 @@ internal sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> log
             },
         };
 
-        httpContext.Response.StatusCode = problem.Status.Value;
-        await httpContext.Response.WriteAsJsonAsync(problem, cancellationToken).ConfigureAwait(false);
+        await WriteAsync(httpContext, problem, cancellationToken).ConfigureAwait(false);
 
         return true;
+    }
+
+    private static async Task WriteAsync(
+        HttpContext httpContext, ProblemDetails problem, CancellationToken cancellationToken)
+    {
+        httpContext.Response.StatusCode = problem.Status!.Value;
+        await httpContext.Response.WriteAsJsonAsync(problem, cancellationToken).ConfigureAwait(false);
     }
 }
 
@@ -58,4 +109,15 @@ internal static partial class GlobalExceptionHandlerMessages
         Message = "Unhandled exception on {Method} {Path} [{CorrelationId}]")]
     public static partial void Unhandled(
         this ILogger logger, Exception exception, string method, string path, string correlationId);
+
+    // Information, not Error, and without the exception. A body that will not
+    // parse says something about the caller and nothing about this service, so
+    // it belongs in the access record rather than in the list of things to go
+    // and fix.
+    [LoggerMessage(
+        EventId = 3001,
+        Level = LogLevel.Information,
+        Message = "Unreadable request body on {Method} {Path} [{CorrelationId}]")]
+    public static partial void Malformed(
+        this ILogger logger, string method, string path, string correlationId);
 }

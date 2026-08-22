@@ -312,6 +312,53 @@ public sealed class IdentityEndpointTests(LubnanApiFactory factory)
         var problem = await response.Content.ReadFromJsonAsync<ProblemDto>(Json).ConfigureAwait(true);
         Assert.Equal("auth.sessionEnded", problem!.Code);
     }
+
+    /// <summary>
+    /// A body the framework cannot parse is a 400, and stays one.
+    /// </summary>
+    /// <remarks>
+    /// The global exception handler used to answer every escaped exception
+    /// identically, including the <c>BadHttpRequestException</c> that minimal
+    /// APIs raise for an unparseable body — so a stray character in JSON came
+    /// back as 500 "Something went wrong on our side". Two costs, and the
+    /// second is the expensive one: the caller was told to retry something that
+    /// can never succeed, and every scanner on the internet wrote an
+    /// Error-level line into the log that a real fault then had to be found
+    /// underneath.
+    /// </remarks>
+    [Theory]
+    [InlineData("{not json")]
+    [InlineData("")]
+    [InlineData("[]")]
+    public async Task A_body_that_will_not_parse_is_refused_as_a_bad_request(string payload)
+    {
+        using var content = new StringContent(payload, System.Text.Encoding.UTF8, "application/json");
+        var response = await Client.PostAsync(new Uri("/api/v1/auth/login", UriKind.Relative), content)
+            .ConfigureAwait(true);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var body = await response.Content.ReadAsStringAsync().ConfigureAwait(true);
+
+        // And it names nothing internal. The framework's own message quotes the
+        // parameter and the DTO — "Failed to read parameter \"LoginRequest
+        // body\"" — which is shape the caller has no business learning.
+        Assert.DoesNotContain("LoginRequest", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("Lubnan.Application", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_field_of_the_wrong_type_is_refused_as_a_bad_request()
+    {
+        var response = await Client
+            .PostAsJsonAsync("/api/v1/auth/login", new { email = 12345, password = Array.Empty<string>() })
+            .ConfigureAwait(true);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var body = await response.Content.ReadAsStringAsync().ConfigureAwait(true);
+        Assert.DoesNotContain("Something went wrong on our side", body, StringComparison.Ordinal);
+    }
 }
 
 public sealed record MeDto(
