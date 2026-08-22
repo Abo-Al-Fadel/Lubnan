@@ -51,7 +51,17 @@ internal sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> log
          */
         if (exception is BadHttpRequestException malformed)
         {
-            logger.Malformed(httpContext.Request.Method, httpContext.Request.Path, correlationId);
+            // Guarded, unlike the Error-level call below, and CA1873 is right to
+            // insist. Request.Path is a PathString, so passing it converts to a
+            // string at the call site - before the generated log method checks
+            // whether anything is listening. At Error that check all but always
+            // passes and the conversion is not wasted; at Information it can be
+            // disabled in a deployment, and then this allocates on every
+            // malformed request for nobody.
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.Malformed(httpContext.Request.Method, httpContext.Request.Path, correlationId);
+            }
 
             await WriteAsync(
                 httpContext,
