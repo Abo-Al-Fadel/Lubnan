@@ -123,6 +123,73 @@ public sealed class CommunityEndpointTests(LubnanApiFactory factory)
         Assert.Equal(me!.Id, post!.Author.Id);
     }
 
+    /// <summary>
+    /// A face reaches the feed, and the feed does not carry the picture.
+    /// </summary>
+    /// <remarks>
+    /// Two assertions and they are opposite halves of one decision. The version
+    /// has to be there, or the client cannot tell "no picture" from "picture I
+    /// have not asked for" and puts a 404 in the console behind every member
+    /// who never set one. And the bytes must <em>not</em> be there: avatars are
+    /// rows in this database rather than objects in a bucket, so a projection
+    /// that reached for the entity would answer a question about eighty
+    /// timestamps by loading eighty images.
+    /// </remarks>
+    [Fact]
+    public async Task The_feed_carries_a_version_for_each_face_and_none_of_the_pixels()
+    {
+        var (client, csrf) = await SignInAsync().ConfigureAwait(true);
+        var me = await client.GetFromJsonAsync<MeDto>("/api/v1/me", Json).ConfigureAwait(true);
+
+        using var picture = new System.Net.Http.MultipartFormDataContent();
+        var bytes = new ByteArrayContent(OnePixelPng());
+        bytes.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/png");
+        picture.Add(bytes, "file", "me.png");
+
+        using var upload = new HttpRequestMessage(HttpMethod.Post, "/api/v1/me/avatar")
+        {
+            Content = picture,
+        };
+        upload.Headers.Add(AuthCookies.CsrfHeader, csrf);
+        var uploaded = await client.SendAsync(upload).ConfigureAwait(true);
+        Assert.Equal(HttpStatusCode.OK, uploaded.StatusCode);
+
+        using var write = new HttpRequestMessage(HttpMethod.Post, "/api/v1/community/posts")
+        {
+            Content = JsonContent.Create(new { body = "A post from somebody with a face.", placeSlug = (string?)null }),
+        };
+        write.Headers.Add(AuthCookies.CsrfHeader, csrf);
+        var created = await client.SendAsync(write).ConfigureAwait(true);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+
+        // The version is on the DTO the write returns, not only on the next
+        // read. The post is spliced straight into the page, so without it the
+        // author's own new post is the one row showing initials.
+        var fresh = await created.Content.ReadFromJsonAsync<PostDto>(Json).ConfigureAwait(true);
+        Assert.False(string.IsNullOrEmpty(fresh!.Author.AvatarVersion));
+
+        var raw = await Client.GetStringAsync(new Uri("/api/v1/community/posts", UriKind.Relative))
+            .ConfigureAwait(true);
+
+        var feed = JsonSerializer.Deserialize<List<PostDto>>(raw, Json)!;
+        var mine = feed.Single(p => p.Id == fresh.Id);
+
+        Assert.Equal(me!.Id, mine.Author.Id);
+        Assert.Equal(fresh.Author.AvatarVersion, mine.Author.AvatarVersion);
+
+        // Seeded posts belong to members who never uploaded anything, and null
+        // is how the client knows to draw initials instead of asking.
+        Assert.Contains(feed, p => p.Author.AvatarVersion is null);
+
+        // And nothing image-shaped came back. A base64 PNG in the payload would
+        // start "iVBORw0KGgo"; the field would be there whatever it was called.
+        Assert.DoesNotContain("iVBORw0KGgo", raw, StringComparison.Ordinal);
+        Assert.DoesNotContain("content", raw, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static byte[] OnePixelPng() => Convert.FromBase64String(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==");
+
     private async Task<(HttpClient Client, string Csrf)> SignInAsync()
     {
         var client = Client;

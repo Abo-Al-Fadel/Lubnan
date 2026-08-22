@@ -4,7 +4,24 @@ import { apiRegion, displayRegion } from '@/lib/regions';
 export type CommunityAuthor = {
   id: string;
   displayName: string;
+
+  /**
+   * When their picture last changed, or `null` for initials.
+   *
+   * Both halves of what the feed needs to draw a face, in one field. It says
+   * whether to request an image at all — most members have none, and asking
+   * anyway would put a 404 in the console behind every avatar — and it is the
+   * cache key, because the avatar route is served `immutable` for a year.
+   */
+  avatarVersion: string | null;
 };
+
+/** Where a face is fetched from. Versioned, or the browser keeps last year's. */
+export function avatarUrl(author: CommunityAuthor): string | null {
+  return author.avatarVersion
+    ? `/api/v1/users/${author.id}/avatar?v=${encodeURIComponent(author.avatarVersion)}`
+    : null;
+}
 
 export type CommunityComment = {
   id: string;

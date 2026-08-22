@@ -1,3 +1,4 @@
+using System.Globalization;
 using FluentValidation;
 using Lubnan.Application.Abstractions;
 using Lubnan.Application.Abstractions.Http;
@@ -53,7 +54,14 @@ internal sealed class Handler(IAppDbContext db, ICurrentUser currentUser, IClock
         var author = await db.Users
             .AsNoTracking()
             .Where(u => u.Id == authorId)
-            .Select(u => u.DisplayName.Value)
+            .Select(u => new
+            {
+                Name = u.DisplayName.Value,
+                AvatarVersion = db.Avatars
+                    .Where(a => a.UserId == u.Id)
+                    .Select(a => a.UpdatedAt.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture))
+                    .FirstOrDefault(),
+            })
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
@@ -68,7 +76,7 @@ internal sealed class Handler(IAppDbContext db, ICurrentUser currentUser, IClock
         var comment = added.Value;
         return Result.Success(new CommentDto(
             comment.Id,
-            new AuthorDto(authorId, author),
+            new AuthorDto(authorId, author.Name, author.AvatarVersion),
             comment.Body,
             comment.CreatedAt,
             true));

@@ -1,3 +1,4 @@
+using System.Globalization;
 using FluentValidation;
 using Lubnan.Application.Abstractions;
 using Lubnan.Application.Abstractions.Http;
@@ -88,14 +89,44 @@ internal sealed class Handler(IAppDbContext db, ICurrentUser currentUser)
             .Distinct()
             .ToList();
 
+        /*
+         * One query for every face on the page, and it must not touch the bytes.
+         *
+         * Avatars are stored as rows in the database rather than in object
+         * storage, so `Avatars` carries the image itself. Selecting the entity
+         * here would pull eighty pictures into memory to answer a question
+         * about eighty timestamps — a feed measured in megabytes, of which the
+         * client uses nothing. Only UpdatedAt is projected; the pixels are
+         * fetched by the browser from /api/v1/users/{id}/avatar, one request
+         * per face, cached for a year.
+         *
+         * Batched with the names for the same reason those were batched: the
+         * alternative is a query per author, which is the N+1 this block was
+         * already written to avoid.
+         */
         var authors = await db.Users
             .AsNoTracking()
             .Where(u => authorIds.Contains(u.Id))
-            .Select(u => new { u.Id, Name = u.DisplayName.Value })
+            .Select(u => new
+            {
+                u.Id,
+                Name = u.DisplayName.Value,
+                AvatarVersion = db.Avatars
+                    .Where(a => a.UserId == u.Id)
+                    .Select(a => a.UpdatedAt.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture))
+                    .FirstOrDefault(),
+            })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        var names = authors.ToDictionary(a => a.Id, a => a.Name);
+        var byId = authors.ToDictionary(a => a.Id);
+
+        // "Member" for an author whose row is gone — anonymised, or restored
+        // from before they registered. The post survives its writer, and a feed
+        // that threw on one missing name would show nobody anything.
+        AuthorDto Author(Guid id) => byId.TryGetValue(id, out var found)
+            ? new AuthorDto(id, found.Name, found.AvatarVersion)
+            : new AuthorDto(id, "Member", null);
 
         var places = slugs.Count == 0
             ? []
@@ -123,7 +154,7 @@ internal sealed class Handler(IAppDbContext db, ICurrentUser currentUser)
 
                 return new PostDto(
                     row.Id,
-                    new AuthorDto(row.AuthorId, names.GetValueOrDefault(row.AuthorId, "Member")),
+                    Author(row.AuthorId),
                     row.Body,
                     row.PlaceSlug,
                     place?.Name,
@@ -134,7 +165,7 @@ internal sealed class Handler(IAppDbContext db, ICurrentUser currentUser)
                     row.LikedByMe,
                     row.Comments.Select(c => new CommentDto(
                         c.Id,
-                        new AuthorDto(c.AuthorId, names.GetValueOrDefault(c.AuthorId, "Member")),
+                        Author(c.AuthorId),
                         c.Body,
                         c.CreatedAt,
                         viewer is { } id && c.AuthorId == id)).ToList());

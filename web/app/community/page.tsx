@@ -12,11 +12,13 @@ import { ApiError } from '@/lib/api';
 import { loginHref } from '@/lib/return-to';
 import {
   addComment,
+  avatarUrl,
   createPost,
   listPosts,
   relativeTime,
   removeComment,
   toggleLike,
+  type CommunityAuthor,
   type CommunityPost,
 } from '@/lib/community';
 import { REGIONS, useCatalog } from '@/lib/catalog';
@@ -68,12 +70,14 @@ export default function CommunityPage() {
     void load(region);
   }, [ready, region, load]);
 
+  // The whole author, not just the name: the sidebar draws faces too, and the
+  // version that decides whether there is one travels with them.
   const contributors = useMemo(() => {
-    const seen = new Map<string, string>();
+    const seen = new Map<string, CommunityAuthor>();
     for (const post of posts) {
-      if (!seen.has(post.author.id)) seen.set(post.author.id, post.author.displayName);
+      if (!seen.has(post.author.id)) seen.set(post.author.id, post.author);
     }
-    return Array.from(seen.entries()).slice(0, 6);
+    return Array.from(seen.values()).slice(0, 6);
   }, [posts]);
 
   const trending = useMemo(() => {
@@ -284,7 +288,18 @@ export default function CommunityPage() {
           <div className="flex flex-col gap-5">
             <div className="rounded-xl border border-ink-ghost bg-ground p-4">
               <div className="flex gap-3">
-                <Avatar name={me?.displayName ?? tr('community.you')} />
+                {/* The composer shows your own face, from the account
+                    endpoint rather than from the feed - you may not have
+                    posted yet, and a signed-in person looking at their own
+                    initials while everyone else has a picture reads as a
+                    feature that half works. */}
+                <Avatar
+                  author={{
+                    id: me?.id ?? '',
+                    displayName: me?.displayName ?? tr('community.you'),
+                    avatarVersion: me?.avatarVersion ?? null,
+                  }}
+                />
                 <div className="flex-1">
                   <label htmlFor="compose" className="sr-only">
                     {tr('community.composeLabel')}
@@ -362,7 +377,7 @@ export default function CommunityPage() {
                   className="rounded-xl border border-ink-ghost bg-ground"
                 >
                   <header className="flex items-center gap-3 p-4">
-                    <Avatar name={p.author.displayName} />
+                    <Avatar author={p.author} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-ink">{p.author.displayName}</p>
                       <p className="micro mt-1 truncate text-ink-dim">
@@ -446,7 +461,7 @@ export default function CommunityPage() {
                       <ul className="flex flex-col gap-3">
                         {p.comments.map((c) => (
                           <li key={c.id} className="group/comment flex gap-3">
-                            <Avatar name={c.author.displayName} />
+                            <Avatar author={c.author} />
                             <div className="min-w-0 flex-1">
                               <p className="text-sm text-ink">
                                 <span className="font-semibold">{c.author.displayName}</span>{' '}
@@ -524,10 +539,12 @@ export default function CommunityPage() {
               <div className="rounded-xl border border-ink-ghost bg-ground p-5">
                 <p className="micro mb-4 text-ink-dim">{tr('community.contributors')}</p>
                 <ul className="flex flex-col gap-4">
-                  {contributors.map(([id, name]) => (
-                    <li key={id} className="flex items-center gap-3">
-                      <Avatar name={name} />
-                      <p className="truncate text-sm font-medium text-ink">{name}</p>
+                  {contributors.map((author) => (
+                    <li key={author.id} className="flex items-center gap-3">
+                      <Avatar author={author} />
+                      <p className="truncate text-sm font-medium text-ink">
+                        {author.displayName}
+                      </p>
                     </li>
                   ))}
                 </ul>
@@ -559,20 +576,49 @@ export default function CommunityPage() {
   );
 }
 
-function Avatar({ name }: { name: string }) {
-  const initials = name
+/**
+ * A face, or the initials that stand in for one.
+ *
+ * `aria-hidden` on both branches, and the image carries an empty alt for the
+ * same reason: every one of these sits beside the author's name in the markup,
+ * so describing it would make a screen reader read each name twice.
+ *
+ * The initials stay mounted underneath rather than being replaced. A picture
+ * that fails to load - offline, or a row deleted between the feed being built
+ * and the image being fetched - then falls back to them instead of leaving a
+ * hole, which is what a broken <img> renders as.
+ */
+function Avatar({ author }: { author: CommunityAuthor }) {
+  const initials = author.displayName
     .split(' ')
     .map((w) => w[0])
     .join('')
     .slice(0, 2)
     .toUpperCase();
+
+  const src = avatarUrl(author);
+
   return (
     <span
       aria-hidden="true"
-      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
+      className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full text-xs font-semibold"
       style={{ background: 'var(--accent)', color: 'var(--accent-ink)' }}
     >
       {initials}
+      {src ? (
+        <img
+          src={src}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          width={40}
+          height={40}
+          className="absolute inset-0 h-full w-full object-cover"
+          onError={(e) => {
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+      ) : null}
     </span>
   );
 }

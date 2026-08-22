@@ -1,3 +1,4 @@
+using System.Globalization;
 using FluentValidation;
 using Lubnan.Application.Abstractions;
 using Lubnan.Application.Abstractions.Http;
@@ -59,10 +60,21 @@ internal sealed class Handler(IAppDbContext db, ICurrentUser currentUser, IClock
             }
         }
 
+        // The version, not the picture. This DTO is rendered straight into the
+        // feed the moment the post is made, and a new post whose author had no
+        // face until the page reloaded would be the one row that looked wrong.
         var author = await db.Users
             .AsNoTracking()
             .Where(u => u.Id == authorId)
-            .Select(u => new { u.Id, Name = u.DisplayName.Value })
+            .Select(u => new
+            {
+                u.Id,
+                Name = u.DisplayName.Value,
+                AvatarVersion = db.Avatars
+                    .Where(a => a.UserId == u.Id)
+                    .Select(a => a.UpdatedAt.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture))
+                    .FirstOrDefault(),
+            })
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
@@ -99,7 +111,7 @@ internal sealed class Handler(IAppDbContext db, ICurrentUser currentUser, IClock
 
         return Result.Success(new PostDto(
             post.Id,
-            new AuthorDto(author.Id, author.Name),
+            new AuthorDto(author.Id, author.Name, author.AvatarVersion),
             post.Body,
             post.PlaceSlug,
             placeName,
