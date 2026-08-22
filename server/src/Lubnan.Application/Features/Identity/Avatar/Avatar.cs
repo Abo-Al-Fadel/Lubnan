@@ -141,7 +141,41 @@ internal sealed class Endpoint : IEndpoint
                         extensions: new Dictionary<string, object?> { ["code"] = "avatar.notMultipart" });
                 }
 
-                var form = await http.ReadFormAsync(cancellationToken);
+                /*
+                 * The size limit is enforced while the body is being read, so
+                 * it throws rather than returns.
+                 *
+                 * WithFormOptions below refuses anything past MaxUploadBytes at
+                 * the transport, which is the only place a limit means
+                 * anything - but it does that by throwing InvalidDataException
+                 * out of ReadFormAsync, and an exception that escapes here
+                 * reaches the global handler and leaves as 500 "Something went
+                 * wrong on our side."
+                 *
+                 * So the one upload failure a person is most likely to hit -
+                 * any photograph straight off a phone - told them the server
+                 * was broken and gave them nothing to do about it. The profile
+                 * page shows the server's sentence precisely so it can say
+                 * whether the file was too large or the wrong kind; this is the
+                 * sentence it was meant to be given.
+                 *
+                 * The check on file.Length below stays. It measures what the
+                 * client *claimed*, which is a cheaper refusal when the claim
+                 * is honest; this catches the case where it was not.
+                 */
+                IFormCollection form;
+                try
+                {
+                    form = await http.ReadFormAsync(cancellationToken);
+                }
+                catch (InvalidDataException)
+                {
+                    return Results.Problem(
+                        title: $"That image is larger than {DomainAvatar.MaxUploadBytes / (1024 * 1024)} MB.",
+                        statusCode: StatusCodes.Status400BadRequest,
+                        extensions: new Dictionary<string, object?> { ["code"] = "avatar.tooLarge" });
+                }
+
                 var file = form.Files["file"] ?? (form.Files.Count > 0 ? form.Files[0] : null);
 
                 if (file is null || file.Length == 0)

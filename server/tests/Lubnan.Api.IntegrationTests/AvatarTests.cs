@@ -165,6 +165,37 @@ public sealed class AvatarTests(LubnanApiFactory factory)
             $"expected 401 or 403, got {(int)response.StatusCode}");
     }
 
+    /// <summary>
+    /// The failure a real person is most likely to cause, answered as theirs.
+    /// </summary>
+    /// <remarks>
+    /// A photograph straight off a phone clears four megabytes routinely, so
+    /// this is not an edge case — it is the ordinary way the upload fails. The
+    /// limit is enforced while the body is being read, which means it throws
+    /// rather than returns, and an escaped exception used to leave as 500
+    /// "Something went wrong on our side": the one message that is both untrue
+    /// and impossible to act on. The profile page renders whatever sentence the
+    /// server sends, so the status here is what decides whether somebody
+    /// resizes their picture or files a bug.
+    /// </remarks>
+    [Fact]
+    public async Task An_upload_past_the_limit_is_the_callers_problem_not_a_server_fault()
+    {
+        var s = await SignedInAsync().ConfigureAwait(true);
+
+        var oversize = new byte[Lubnan.Domain.Users.Avatar.MaxUploadBytes + (256 * 1024)];
+        var response = await UploadAsync(s, oversize, "holiday.png", "image/png").ConfigureAwait(true);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var body = await response.Content.ReadAsStringAsync().ConfigureAwait(true);
+        Assert.Contains("avatar.tooLarge", body, StringComparison.Ordinal);
+
+        // And it says the size, because "too large" without a number leaves
+        // somebody guessing how much smaller is small enough.
+        Assert.Contains("4 MB", body, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task Removing_it_leaves_nothing_to_serve()
     {
