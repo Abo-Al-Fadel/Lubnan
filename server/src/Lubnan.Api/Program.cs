@@ -20,6 +20,19 @@ using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Kestrel writes `Server: Kestrel` itself, and it does so late.
+//
+// SecurityHeadersMiddleware calls Headers.Remove("Server") with exactly this
+// intent, and it cannot work: Kestrel adds the header while it is producing the
+// response line, which is after every middleware has run, and only when nothing
+// has already set it. So the header the middleware removes does not exist yet,
+// and the one that reaches the browser is never seen by any middleware. The
+// comment there described the intent; this is the switch that carries it out.
+//
+// Small, and worth it anyway. Version and framework banners are how a scanner
+// decides which exploit list to work through first.
+builder.WebHost.ConfigureKestrel(kestrel => kestrel.AddServerHeader = false);
+
 // Every required setting, checked together, before anything tries to use one.
 // An empty environment variable is treated as a missing one - which the check
 // this replaced did not do, so a blank connection string reached Npgsql and

@@ -14,6 +14,11 @@
 const nextConfig = {
   reactStrictMode: true,
 
+  // `X-Powered-By: Next.js` on every response, naming the framework to anyone
+  // who asks. The API side strips its equivalent; this is the same decision on
+  // this side of the hop.
+  poweredByHeader: false,
+
   async rewrites() {
     const api = process.env.API_ORIGIN ?? 'http://localhost:5080';
 
